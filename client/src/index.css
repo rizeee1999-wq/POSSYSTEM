@@ -2325,6 +2325,109 @@ table.data-table tbody tr:hover {
 }
 
 /* ==========================================================================
+   Category Management Modal
+   ========================================================================== */
+
+.category-manager-card {
+  max-width: 540px;
+  width: 100%;
+}
+
+.category-add-row {
+  display: flex;
+  gap: 0.65rem;
+  margin-bottom: 1.35rem;
+}
+
+.category-add-row input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-xs);
+}
+
+.category-add-row input:focus {
+  outline: none;
+  border-color: var(--salon-gold);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.category-manager-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.category-manager-list h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.category-manager-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-alt);
+  transition: all 0.15s ease;
+  gap: 0.75rem;
+}
+
+.category-manager-item:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-xs);
+}
+
+.cat-name-display {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  flex: 1;
+  word-break: break-word;
+}
+
+.cat-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.cat-edit-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.cat-edit-form input {
+  flex: 1;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--salon-gold);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+
+/* ==========================================================================
    Receipt Paper Modal & Print Styling
    ========================================================================== */
 

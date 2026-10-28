@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
 import {
   adminCreateCategory,
+  adminUpdateCategory,
+  adminDeleteCategory,
   adminCreateProduct,
   adminDeleteProduct,
   adminGetProducts,
@@ -39,6 +40,14 @@ export default function Products() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Category Management Modal State
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [editingCatName, setEditingCatName] = useState('');
+  const [newCatName, setNewCatName] = useState('');
+  const [catError, setCatError] = useState('');
+  const [catSaving, setCatSaving] = useState(false);
 
   const [search, setSearch] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState('');
@@ -140,14 +149,58 @@ export default function Products() {
   }
 
   async function handleNewCategory() {
-    const name = window.prompt(t.newCategoryPrompt);
-    if (!name || !name.trim()) return;
+    setCategoryModalOpen(true);
+  }
+
+  async function handleAddCategoryFromModal(e) {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    setCatSaving(true);
+    setCatError('');
     try {
-      const category = await adminCreateCategory(name.trim());
+      const category = await adminCreateCategory(newCatName.trim());
       setCategories((prev) => [...prev, category]);
       setForm((f) => ({ ...f, category_id: category.id }));
+      setNewCatName('');
     } catch (e) {
-      setFormError(e.message);
+      setCatError(e.message);
+    } finally {
+      setCatSaving(false);
+    }
+  }
+
+  async function handleSaveEditCategory(catId) {
+    if (!editingCatName.trim()) return;
+    setCatSaving(true);
+    setCatError('');
+    try {
+      const updated = await adminUpdateCategory(catId, editingCatName.trim());
+      setCategories((prev) => prev.map((c) => (c.id === catId ? updated : c)));
+      setEditingCatId(null);
+      setEditingCatName('');
+      await refresh();
+    } catch (e) {
+      setCatError(e.message);
+    } finally {
+      setCatSaving(false);
+    }
+  }
+
+  async function handleDeleteCategory(catId, catName) {
+    if (!window.confirm(`តើអ្នកពិតជាចង់លុបប្រភេទ "${catName}" មែនទេ?`)) return;
+    setCatSaving(true);
+    setCatError('');
+    try {
+      await adminDeleteCategory(catId);
+      setCategories((prev) => prev.filter((c) => c.id !== catId));
+      if (String(form.category_id) === String(catId)) {
+        setForm((f) => ({ ...f, category_id: '' }));
+      }
+      await refresh();
+    } catch (e) {
+      setCatError(`មិនអាចលុបប្រភេទនេះបានទេ៖ ${e.message}`);
+    } finally {
+      setCatSaving(false);
     }
   }
 
@@ -236,9 +289,19 @@ export default function Products() {
           <h1>{t.productsTitle}</h1>
           <p className="admin-subtitle">គ្រប់គ្រងសេវាកម្មកាត់សក់ និងផលិតផលថែរក្សាសក់</p>
         </div>
-        <button className="btn btn-primary" onClick={openAddModal}>
-          {t.addProduct}
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setCategoryModalOpen(true)}
+            title="កែសម្រួល បន្ថែម ឬលុបប្រភេទសេវាកម្ម/ផលិតផល"
+          >
+            🏷️ គ្រប់គ្រងប្រភេទ
+          </button>
+          <button className="btn btn-primary" onClick={openAddModal}>
+            {t.addProduct}
+          </button>
+        </div>
       </div>
 
       {error && <div className="banner banner-error">{error}</div>}
@@ -444,26 +507,56 @@ export default function Products() {
               </div>
 
               <div className="form-group">
-                <label>{t.category} *</label>
-                <select
-                  required
-                  value={form.category_id}
-                  onChange={(e) => {
-                    if (e.target.value === '__new__') {
-                      handleNewCategory();
-                      return;
-                    }
-                    setForm({ ...form, category_id: e.target.value });
-                  }}
-                >
-                  <option value="" disabled>{t.selectCategoryPlaceholder}</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                  <option value="__new__">{t.newCategory}</option>
-                </select>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label>{t.category} *</label>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryModalOpen(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--salon-gold)',
+                      fontSize: '0.82rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    ⚙️ កែសម្រួល / បន្ថែមប្រភេទ
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+                  <select
+                    style={{ flex: 1 }}
+                    required
+                    value={form.category_id}
+                    onChange={(e) => {
+                      if (e.target.value === '__manage__') {
+                        setCategoryModalOpen(true);
+                        return;
+                      }
+                      setForm({ ...form, category_id: e.target.value });
+                    }}
+                  >
+                    <option value="" disabled>{t.selectCategoryPlaceholder}</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                    <option value="__manage__">⚙️ គ្រប់គ្រងប្រភេទ (កែសម្រួល / បន្ថែមថ្មី)...</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setCategoryModalOpen(true)}
+                    title="កែសម្រួល ឬបន្ថែមប្រភេទ"
+                    style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    ⚙️ កែសម្រួល
+                  </button>
+                </div>
               </div>
 
               <div className="form-row">
@@ -612,6 +705,106 @@ export default function Products() {
                 disabled={deleting}
               >
                 {deleting ? t.deleting : t.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {categoryModalOpen && (
+        <div className="modal-backdrop" onClick={() => setCategoryModalOpen(false)}>
+          <div className="modal-card category-manager-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🏷️ គ្រប់គ្រងប្រភេទសេវាកម្ម & ផលិតផល</h2>
+              <button className="modal-close" onClick={() => setCategoryModalOpen(false)}>×</button>
+            </div>
+
+            {catError && <div className="banner banner-error">{catError}</div>}
+
+            {/* Quick Add Form */}
+            <form onSubmit={handleAddCategoryFromModal} className="category-add-row">
+              <input
+                type="text"
+                placeholder="បញ្ចូលឈ្មោះប្រភេទថ្មី..."
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                required
+              />
+              <button type="submit" className="btn btn-primary" disabled={catSaving}>
+                + បន្ថែមប្រភេទ
+              </button>
+            </form>
+
+            <div className="category-manager-list">
+              <h4>បញ្ជីប្រភេទបច្ចុប្បន្ន ({categories.length})</h4>
+              {categories.map((c) => (
+                <div key={c.id} className="category-manager-item">
+                  {editingCatId === c.id ? (
+                    <div className="cat-edit-form">
+                      <input
+                        type="text"
+                        value={editingCatName}
+                        onChange={(e) => setEditingCatName(e.target.value)}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleSaveEditCategory(c.id)}
+                        disabled={catSaving}
+                      >
+                        រក្សាទុក
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => {
+                          setEditingCatId(null);
+                          setEditingCatName('');
+                        }}
+                      >
+                        បោះបង់
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="cat-name-display">{c.name}</span>
+                      <div className="cat-actions">
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => {
+                            setEditingCatId(c.id);
+                            setEditingCatName(c.name);
+                          }}
+                          title="កែសម្រួលឈ្មោះប្រភេទនេះ"
+                        >
+                          ✏️ កែសម្រួល
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger-outline btn-sm"
+                          onClick={() => handleDeleteCategory(c.id, c.name)}
+                          disabled={catSaving}
+                          title="លុបប្រភេទនេះចេញ"
+                        >
+                          🗑️ លុប
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setCategoryModalOpen(false)}
+              >
+                រួចរាល់
               </button>
             </div>
           </div>

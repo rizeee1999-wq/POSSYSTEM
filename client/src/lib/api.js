@@ -132,6 +132,10 @@ export const adminDeleteProduct = (id) =>
 
 export const adminCreateCategory = (name) =>
   apiFetch('/admin/categories', { method: 'POST', body: { name }, auth: true });
+export const adminUpdateCategory = (id, name) =>
+  apiFetch(`/admin/categories/${id}`, { method: 'PUT', body: { name }, auth: true });
+export const adminDeleteCategory = (id) =>
+  apiFetch(`/admin/categories/${id}`, { method: 'DELETE', auth: true });
 
 // ---- Admin Sales & Checkout -------------------------------------------------
 
