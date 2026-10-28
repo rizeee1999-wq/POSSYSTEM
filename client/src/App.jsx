@@ -7,6 +7,8 @@ import Login from './pages/admin/Login.jsx';
 import Dashboard from './pages/admin/Dashboard.jsx';
 import Products from './pages/admin/Products.jsx';
 import Sell from './pages/admin/Sell.jsx';
+import Queue from './pages/admin/Queue.jsx';
+import Barbers from './pages/admin/Barbers.jsx';
 import SalesHistory from './pages/admin/SalesHistory.jsx';
 
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -26,17 +28,33 @@ function AdminLayout({ children }) {
 export default function App() {
   return (
     <Routes>
-      {/* ---- Public client site ---- */}
+      {/* ---- Public client site / Salon showcase ---- */}
       <Route path="/" element={<Catalog />} />
       <Route path="/product/:id" element={<ProductDetail />} />
 
-      {/* ---- Admin ---- */}
+      {/* ---- Admin Portal ---- */}
       <Route path="/admin/login" element={<Login />} />
       <Route
         path="/admin"
         element={
           <AdminLayout>
             <Dashboard />
+          </AdminLayout>
+        }
+      />
+      <Route
+        path="/admin/sell"
+        element={
+          <AdminLayout>
+            <Sell />
+          </AdminLayout>
+        }
+      />
+      <Route
+        path="/admin/queue"
+        element={
+          <AdminLayout>
+            <Queue />
           </AdminLayout>
         }
       />
@@ -49,10 +67,10 @@ export default function App() {
         }
       />
       <Route
-        path="/admin/sell"
+        path="/admin/barbers"
         element={
           <AdminLayout>
-            <Sell />
+            <Barbers />
           </AdminLayout>
         }
       />
