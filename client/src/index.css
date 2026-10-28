@@ -785,8 +785,9 @@ a:hover {
 
 .sell-product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 1.1rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.35rem;
+  margin-top: 0.5rem;
 }
 
 .sell-product-card {
@@ -1612,18 +1613,30 @@ a:hover {
 .catalog-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.85rem;
+  align-items: center;
+  gap: 1.15rem;
+  margin-bottom: 1.85rem;
 }
 
 .catalog-controls input,
 .catalog-controls select {
-  padding: 0.6rem 0.95rem;
-  border: 1px solid var(--border);
+  padding: 0.75rem 1.15rem;
+  border: 1.5px solid var(--border);
   border-radius: var(--radius);
   background: #ffffff;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   box-shadow: var(--shadow-xs);
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+}
+
+.catalog-controls input[type="text"] {
+  flex: 1 1 240px;
+  min-width: 220px;
+}
+
+.catalog-controls select {
+  min-width: 180px;
+  cursor: pointer;
 }
 
 .catalog-controls input:focus,
@@ -1793,14 +1806,29 @@ table.data-table tbody tr:hover {
 .admin-filters-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.15rem;
   align-items: flex-end;
   background: #ffffff;
-  padding: 1rem 1.25rem;
+  padding: 1.15rem 1.35rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-xs);
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.85rem;
+}
+
+.admin-filters-bar input,
+.admin-filters-bar select {
+  padding: 0.7rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  font-size: 0.92rem;
+  transition: all 0.2s ease;
+}
+
+.admin-filters-bar input.search-input {
+  min-width: 240px;
+  flex: 1;
 }
 
 .filter-group {
