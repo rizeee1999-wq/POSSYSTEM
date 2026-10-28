@@ -294,13 +294,13 @@ export default function Products() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>{t.name}</th>
-                  <th>{t.category}</th>
-                  <th>{t.itemType}</th>
-                  <th>{t.price}</th>
-                  <th>{t.duration} / {t.stock}</th>
-                  <th>ស្ថានភាព</th>
-                  <th>សកម្មភាព</th>
+                  <th style={{ minWidth: '220px' }}>{t.name}</th>
+                  <th style={{ minWidth: '160px' }}>{t.category}</th>
+                  <th style={{ minWidth: '130px', textAlign: 'center' }}>{t.itemType}</th>
+                  <th style={{ minWidth: '110px' }}>{t.price}</th>
+                  <th style={{ minWidth: '130px' }}>{t.duration} / {t.stock}</th>
+                  <th style={{ minWidth: '110px', textAlign: 'center' }}>ស្ថានភាព</th>
+                  <th style={{ minWidth: '130px', textAlign: 'center' }}>សកម្មភាព</th>
                 </tr>
               </thead>
               <tbody>
@@ -329,7 +329,7 @@ export default function Products() {
                       </div>
                     </td>
                     <td>{p.categories?.name || '—'}</td>
-                    <td>
+                    <td style={{ textAlign: 'center' }}>
                       <span className={`badge ${p.item_type === 'service' ? 'badge-service' : 'badge-product'}`}>
                         {p.item_type === 'service' ? '✂️ សេវាកម្ម' : '🧴 ផលិតផល'}
                       </span>
@@ -347,7 +347,7 @@ export default function Products() {
                         </span>
                       )}
                     </td>
-                    <td>
+                    <td style={{ textAlign: 'center' }}>
                       <button
                         className={`status-toggle ${p.published ? 'status-active' : 'status-inactive'}`}
                         onClick={() => handleTogglePublish(p)}
@@ -356,7 +356,7 @@ export default function Products() {
                       </button>
                     </td>
                     <td>
-                      <div className="table-actions">
+                      <div className="table-actions" style={{ justifyContent: 'center' }}>
                         <button
                           className="btn btn-outline btn-sm"
                           onClick={() => openEditModal(p)}

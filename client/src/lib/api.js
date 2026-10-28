@@ -115,7 +115,11 @@ export async function adminUploadProductImage(file) {
 
 export const adminGetProducts = async () => {
   const list = await apiFetch('/admin/products', { auth: true });
-  return (list || []).map((p) => ({ ...p, name: cleanKhmerName(p.name) }));
+  return (list || []).map((p) => ({
+    ...p,
+    name: cleanKhmerName(p.name),
+    categories: p.categories ? { ...p.categories, name: cleanKhmerName(p.categories.name) } : p.categories,
+  }));
 };
 export const adminCreateProduct = (product) =>
   apiFetch('/admin/products', { method: 'POST', body: product, auth: true });
