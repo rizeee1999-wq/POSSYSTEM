@@ -317,15 +317,15 @@ on conflict (name) do nothing;
 insert into barbers (name, nickname, role, phone, active)
 values
   ('ដារ៉ា (Dara)', 'Master Barber', 'master_barber', '012 345 678', true),
-  ('សុខា (Sokha)', 'Senior Stylist', 'stylist', '098 765 432', true),
-  ('បូណា (Bona)', 'Fade Specialist', 'barber', '088 123 456', true),
-  ('វណ្ណៈ (Vannak)', 'Beard & Shave', 'barber', '077 998 877', true)
+  ('សុខា', 'ជាងច្នៃម៉ូតសក់', 'stylist', '098 765 432', true),
+  ('បូណា', 'ជាងជំនាញកាត់ហ្វេត', 'barber', '088 123 456', true),
+  ('វណ្ណៈ', 'ជាងកោរពុកមាត់', 'barber', '077 998 877', true)
 on conflict do nothing;
 
 -- 3. Services & Products
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'កាត់សក់បុរសទូទៅ (Classic Haircut)',
+  'កាត់សក់បុរសទូទៅ',
   'កាត់សក់ម៉ូតបុរាណ និងទាន់សម័យ សមស្របតាមទម្រង់មុខ រួមទាំងការលាងសំអាតសក់',
   5.00,
   (select id from categories where name like 'កាត់សក់%' limit 1),
@@ -333,23 +333,23 @@ select
   30,
   999,
   true
-where not exists (select 1 from products where name = 'កាត់សក់បុរសទូទៅ (Classic Haircut)');
+where not exists (select 1 from products where name = 'កាត់សក់បុរសទូទៅ');
 
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'កាត់សក់ហ្វេត + ផ្លុំសិត (Skin Fade & Styling)',
-  'កាត់សក់ម៉ូតហ្វេតច្បាស់ស្អាត (Low/Mid/High Fade) ផ្លុំសិតម៉ូត និងលាប Pomade',
+  'កាត់សក់ហ្វេត + ផ្លុំសិត',
+  'កាត់សក់ម៉ូតហ្វេតច្បាស់ស្អាត ផ្លុំសិតម៉ូត និងលាបក្រមួន',
   7.00,
   (select id from categories where name like 'កាត់សក់%' limit 1),
   'service',
   40,
   999,
   true
-where not exists (select 1 from products where name = 'កាត់សក់ហ្វេត + ផ្លុំសិត (Skin Fade & Styling)');
+where not exists (select 1 from products where name = 'កាត់សក់ហ្វេត + ផ្លុំសិត');
 
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'កាត់សក់កុមារ (Kids Haircut)',
+  'កាត់សក់កុមារ',
   'សេវាកាត់សក់កុមារទន់ភ្លន់ និងស្អាតទាន់សម័យ',
   4.00,
   (select id from categories where name like 'កាត់សក់%' limit 1),
@@ -357,11 +357,11 @@ select
   25,
   999,
   true
-where not exists (select 1 from products where name = 'កាត់សក់កុមារ (Kids Haircut)');
+where not exists (select 1 from products where name = 'កាត់សក់កុមារ');
 
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'កោរពុកមាត់ + កន្សែងក្តៅ (Hot Towel Shave)',
+  'កោរពុកមាត់ + កន្សែងក្តៅ',
   'កោរពុកមាត់ដោយឡាមប្រពៃណី អមដោយកន្សែងក្តៅ និងប្រេងបន្ទន់ស្បែក',
   4.00,
   (select id from categories where name like 'កោរពុកមាត់%' limit 1),
@@ -369,11 +369,11 @@ select
   25,
   999,
   true
-where not exists (select 1 from products where name = 'កោរពុកមាត់ + កន្សែងក្តៅ (Hot Towel Shave)');
+where not exists (select 1 from products where name = 'កោរពុកមាត់ + កន្សែងក្តៅ');
 
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'កក់សក់ + ម៉ាស្សាក្បាល (Hair Wash & Scalp Massage)',
+  'កក់សក់ + ម៉ាស្សាក្បាល',
   'កក់សក់ស្អាតជ្រៅ ម៉ាស្សាក្បាល ក និងស្មា ជួយសម្រួលអារម្មណ៍',
   3.50,
   (select id from categories where name like 'កក់សក់%' limit 1),
@@ -381,11 +381,11 @@ select
   20,
   999,
   true
-where not exists (select 1 from products where name = 'កក់សក់ + ម៉ាស្សាក្បាល (Hair Wash & Scalp Massage)');
+where not exists (select 1 from products where name = 'កក់សក់ + ម៉ាស្សាក្បាល');
 
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'ប្តូរពណ៌សក់ម៉ូត (Hair Color / Dye)',
+  'ប្តូរពណ៌សក់ម៉ូត',
   'លាបពណ៌សក់បុរស ពណ៌ធម្មជាតិ និងពណ៌ម៉ូតពេញនិយម',
   15.00,
   (select id from categories where name like 'ប្តូរពណ៌សក់%' limit 1),
@@ -393,35 +393,35 @@ select
   60,
   999,
   true
-where not exists (select 1 from products where name = 'ប្តូរពណ៌សក់ម៉ូត (Hair Color / Dye)');
+where not exists (select 1 from products where name = 'ប្តូរពណ៌សក់ម៉ូត');
 
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'ជែលសិតសក់ Matte Pomade (100g)',
-  'Pomade គុណភាពខ្ពស់ ផ្តល់សំណើម រក្សាម៉ូតសក់បានពេញមួយថ្ងៃ និងលាងទឹកចេញងាយស្រួល',
+  'ជែលសិតសក់ម៉ូត (១០០ ក្រាម)',
+  'ជែលសិតសក់គុណភាពខ្ពស់ ផ្តល់សំណើម រក្សាម៉ូតសក់បានពេញមួយថ្ងៃ និងលាងទឹកចេញងាយស្រួល',
   8.00,
   (select id from categories where name like 'ផលិតផល%' limit 1),
   'product',
   0,
   24,
   true
-where not exists (select 1 from products where name = 'ជែលសិតសក់ Matte Pomade (100g)');
+where not exists (select 1 from products where name = 'ជែលសិតសក់ម៉ូត (១០០ ក្រាម)');
 
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'ក្រមួនសិតសក់ Styling Clay Wax (80g)',
-  'Clay Wax បង្កើត Texture សក់ស្អាតបែបធម្មជាតិ មិនរលោង',
+  'ក្រមួនសិតសក់ (៨០ ក្រាម)',
+  'ក្រមួនសិតសក់បង្កើតទម្រង់សក់ស្អាតបែបធម្មជាតិ មិនរលោង',
   7.50,
   (select id from categories where name like 'ផលិតផល%' limit 1),
   'product',
   0,
   18,
   true
-where not exists (select 1 from products where name = 'ក្រមួនសិតសក់ Styling Clay Wax (80g)');
+where not exists (select 1 from products where name = 'ក្រមួនសិតសក់ (៨០ ក្រាម)');
 
 insert into products (name, description, price, category_id, item_type, duration_min, stock, published)
 select 
-  'ប្រេងបន្ទន់ពុកមាត់ Beard Oil (30ml)',
+  'ប្រេងបន្ទន់ពុកមាត់ (៣០ មីលីលីត្រ)',
   'ជួយបំប៉នពុកមាត់ និងផ្តល់ក្លិនក្រអូបទាក់ទាញ',
   6.00,
   (select id from categories where name like 'ផលិតផល%' limit 1),
@@ -429,4 +429,4 @@ select
   0,
   15,
   true
-where not exists (select 1 from products where name = 'ប្រេងបន្ទន់ពុកមាត់ Beard Oil (30ml)');
+where not exists (select 1 from products where name = 'ប្រេងបន្ទន់ពុកមាត់ (៣០ មីលីលីត្រ)');

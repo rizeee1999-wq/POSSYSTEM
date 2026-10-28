@@ -4,6 +4,24 @@ import { requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
+const KHMER_NAME_OVERRIDES = {
+  'កាត់សក់បុរសទូទៅ (Classic Haircut)': 'កាត់សក់បុរសទូទៅ',
+  'កាត់សក់ហ្វេត + ផ្លុំសិត (Skin Fade & Styling)': 'កាត់សក់ហ្វេត + ផ្លុំសិត',
+  'កាត់សក់កុមារ (Kids Haircut)': 'កាត់សក់កុមារ',
+  'កោរពុកមាត់ + កន្សែងក្តៅ (Hot Towel Shave)': 'កោរពុកមាត់ + កន្សែងក្តៅ',
+  'កក់សក់ + ម៉ាស្សាក្បាល (Hair Wash & Scalp Massage)': 'កក់សក់ + ម៉ាស្សាក្បាល',
+  'ប្តូរពណ៌សក់ម៉ូត (Hair Color / Dye)': 'ប្តូរពណ៌សក់ម៉ូត',
+  'ជែលសិតសក់ Matte Pomade (100g)': 'ជែលសិតសក់ម៉ូត (១០០ ក្រាម)',
+  'ក្រមួនសិតសក់ Styling Clay Wax (80g)': 'ក្រមួនសិតសក់ (៨០ ក្រាម)',
+  'ប្រេងបន្ទន់ពុកមាត់ Beard Oil (30ml)': 'ប្រេងបន្ទន់ពុកមាត់ (៣០ មីលីលីត្រ)',
+};
+
+function cleanKhmerName(name) {
+  if (!name) return '';
+  if (KHMER_NAME_OVERRIDES[name]) return KHMER_NAME_OVERRIDES[name];
+  return name.replace(/\s*\([A-Za-z0-9\s/&,.-]+\)/g, '').trim();
+}
+
 // ---------------------------------------------------------------------------
 // Public catalog / Salon Menu — only ever returns published services & products
 // ---------------------------------------------------------------------------
@@ -25,7 +43,12 @@ router.get('/products', async (req, res) => {
 
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+
+  const sanitized = (data || []).map((p) => ({
+    ...p,
+    name: cleanKhmerName(p.name),
+  }));
+  res.json(sanitized);
 });
 
 // GET /api/products/:id
@@ -39,7 +62,10 @@ router.get('/products/:id', async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: 'Product or Service not found' });
-  res.json(data);
+  res.json({
+    ...data,
+    name: cleanKhmerName(data.name),
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -54,6 +80,16 @@ router.get('/admin/products', requireAdmin, async (req, res) => {
     .order('created_at', { ascending: false });
 
   if (error) return res.status(500).json({ error: error.message });
+
+  // Asynchronously clean up any product in database that still contains English
+  for (const p of data || []) {
+    const cleaned = cleanKhmerName(p.name);
+    if (cleaned !== p.name) {
+      req.supabase.from('products').update({ name: cleaned }).eq('id', p.id).then(() => {}).catch(() => {});
+      p.name = cleaned;
+    }
+  }
+
   res.json(data);
 });
 

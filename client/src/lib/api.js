@@ -32,17 +32,39 @@ export async function apiFetch(path, { method = 'GET', body, auth = false } = {}
   return payload;
 }
 
+export const KHMER_NAME_OVERRIDES = {
+  'កាត់សក់បុរសទូទៅ (Classic Haircut)': 'កាត់សក់បុរសទូទៅ',
+  'កាត់សក់ហ្វេត + ផ្លុំសិត (Skin Fade & Styling)': 'កាត់សក់ហ្វេត + ផ្លុំសិត',
+  'កាត់សក់កុមារ (Kids Haircut)': 'កាត់សក់កុមារ',
+  'កោរពុកមាត់ + កន្សែងក្តៅ (Hot Towel Shave)': 'កោរពុកមាត់ + កន្សែងក្តៅ',
+  'កក់សក់ + ម៉ាស្សាក្បាល (Hair Wash & Scalp Massage)': 'កក់សក់ + ម៉ាស្សាក្បាល',
+  'ប្តូរពណ៌សក់ម៉ូត (Hair Color / Dye)': 'ប្តូរពណ៌សក់ម៉ូត',
+  'ជែលសិតសក់ Matte Pomade (100g)': 'ជែលសិតសក់ម៉ូត (១០០ ក្រាម)',
+  'ក្រមួនសិតសក់ Styling Clay Wax (80g)': 'ក្រមួនសិតសក់ (៨០ ក្រាម)',
+  'ប្រេងបន្ទន់ពុកមាត់ Beard Oil (30ml)': 'ប្រេងបន្ទន់ពុកមាត់ (៣០ មីលីលីត្រ)',
+};
+
+export function cleanKhmerName(name) {
+  if (!name) return '';
+  if (KHMER_NAME_OVERRIDES[name]) return KHMER_NAME_OVERRIDES[name];
+  return name.replace(/\s*\([A-Za-z0-9\s/&,.-]+\)/g, '').trim();
+}
+
 // ---- Public Salon Catalog & Barbers -----------------------------------------
 
 export const getCategories = () => apiFetch('/categories');
-export const getProducts = (categoryId, itemType) => {
+export const getProducts = async (categoryId, itemType) => {
   const params = new URLSearchParams();
   if (categoryId) params.append('category_id', categoryId);
   if (itemType) params.append('item_type', itemType);
   const qs = params.toString();
-  return apiFetch(qs ? `/products?${qs}` : '/products');
+  const list = await apiFetch(qs ? `/products?${qs}` : '/products');
+  return (list || []).map((p) => ({ ...p, name: cleanKhmerName(p.name) }));
 };
-export const getProduct = (id) => apiFetch(`/products/${id}`);
+export const getProduct = async (id) => {
+  const p = await apiFetch(`/products/${id}`);
+  return p ? { ...p, name: cleanKhmerName(p.name) } : null;
+};
 export const getBarbers = () => apiFetch('/barbers');
 
 // ---- Admin Staff / Barbers --------------------------------------------------
@@ -91,7 +113,10 @@ export async function adminUploadProductImage(file) {
   return payload;
 }
 
-export const adminGetProducts = () => apiFetch('/admin/products', { auth: true });
+export const adminGetProducts = async () => {
+  const list = await apiFetch('/admin/products', { auth: true });
+  return (list || []).map((p) => ({ ...p, name: cleanKhmerName(p.name) }));
+};
 export const adminCreateProduct = (product) =>
   apiFetch('/admin/products', { method: 'POST', body: product, auth: true });
 export const adminUpdateProduct = (id, product) =>
@@ -108,13 +133,29 @@ export const adminCreateCategory = (name) =>
 
 export const adminCreateSale = (items, details = {}) =>
   apiFetch('/admin/sales', { method: 'POST', body: { items, details }, auth: true });
-export const adminGetSales = (params = {}) => {
+export const adminGetSales = async (params = {}) => {
   const qs = new URLSearchParams(params).toString();
-  return apiFetch(qs ? `/admin/sales?${qs}` : '/admin/sales', { auth: true });
+  const list = await apiFetch(qs ? `/admin/sales?${qs}` : '/admin/sales', { auth: true });
+  return (list || []).map((sale) => ({
+    ...sale,
+    sale_items: sale.sale_items?.map((item) => ({
+      ...item,
+      product_name: cleanKhmerName(item.product_name),
+    })),
+  }));
 };
 export const adminUpdateSale = (id, sale) =>
   apiFetch(`/admin/sales/${id}`, { method: 'PUT', body: sale, auth: true });
 export const adminDeleteSale = (id) =>
   apiFetch(`/admin/sales/${id}`, { method: 'DELETE', auth: true });
 
-export const adminGetDashboard = () => apiFetch('/admin/dashboard', { auth: true });
+export const adminGetDashboard = async () => {
+  const stats = await apiFetch('/admin/dashboard', { auth: true });
+  if (stats?.top_services_30d) {
+    stats.top_services_30d = stats.top_services_30d.map((s) => ({
+      ...s,
+      name: cleanKhmerName(s.name),
+    }));
+  }
+  return stats;
+};
