@@ -12,11 +12,23 @@ import uploadsRouter from './routes/uploads.js';
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
-  .split(',')
-  .map((s) => s.trim());
+const clientOrigin = process.env.CLIENT_ORIGIN;
+const allowedOrigins = clientOrigin
+  ? clientOrigin.split(',').map((s) => s.trim())
+  : '*';
 
-app.use(cors({ origin: allowedOrigins }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like curl, Postman, mobile apps) or if wildcard / allowed
+      if (!origin || allowedOrigins === '*' || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.get('/api/health', (req, res) => res.json({ ok: true, app: 'Salon & Barbershop POS' }));

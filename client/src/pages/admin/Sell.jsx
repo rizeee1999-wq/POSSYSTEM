@@ -281,8 +281,15 @@ export default function Sell() {
                     onClick={() => addToCart(p)}
                     disabled={isOutOfStock}
                   >
-                    <div className="sell-card-header">
-                      <span className="badge badge-type">
+                    <div className="sell-card-media">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="sell-card-img" />
+                      ) : (
+                        <div className="sell-card-placeholder">
+                          <span>{p.item_type === 'service' ? '💈' : '🧴'}</span>
+                        </div>
+                      )}
+                      <span className="badge badge-type sell-media-badge">
                         {p.item_type === 'service' ? `⏱️ ${p.duration_min} នាទី` : `📦 ស្តុក: ${p.stock}`}
                       </span>
                     </div>

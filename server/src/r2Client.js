@@ -1,12 +1,12 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import 'dotenv/config';
 
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID?.trim();
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID?.trim();
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY?.trim();
 
-export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
-export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME?.trim();
+export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL?.trim();
 
 export const isR2Configured = Boolean(
   R2_ACCOUNT_ID &&

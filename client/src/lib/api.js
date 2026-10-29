@@ -69,6 +69,27 @@ export const getBarbers = () => apiFetch('/barbers');
 
 // ---- Admin Staff / Barbers --------------------------------------------------
 
+export async function adminUploadBarberAvatar(file) {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) throw new Error('Not signed in');
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const res = await fetch(`${API_URL}/admin/uploads/barber-avatar`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(payload?.error || `Upload failed (${res.status})`);
+  }
+  return payload;
+}
+
 export const adminGetBarbers = () => apiFetch('/admin/barbers', { auth: true });
 export const adminCreateBarber = (barber) =>
   apiFetch('/admin/barbers', { method: 'POST', body: barber, auth: true });
@@ -129,6 +150,10 @@ export const adminSetPublished = (id, published) =>
   apiFetch(`/admin/products/${id}/publish`, { method: 'PATCH', body: { published }, auth: true });
 export const adminDeleteProduct = (id) =>
   apiFetch(`/admin/products/${id}`, { method: 'DELETE', auth: true });
+export const adminAddProductStock = (id, data) =>
+  apiFetch(`/admin/products/${id}/restock`, { method: 'POST', body: data, auth: true });
+export const adminGetProductStockLogs = (id) =>
+  apiFetch(`/admin/products/${id}/stock-logs`, { auth: true });
 
 export const adminCreateCategory = (name) =>
   apiFetch('/admin/categories', { method: 'POST', body: { name }, auth: true });

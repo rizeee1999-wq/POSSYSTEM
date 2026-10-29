@@ -47,7 +47,7 @@ export default function ProductDetail() {
     new URL(`/product/${product.id}`, window.location.origin).toString(),
   ].filter(Boolean).join('\n');
 
-  const telegramUrl = `https://t.me/ftsomrach?text=${encodeURIComponent(telegramMessage)}`;
+  const telegramUrl = `https://t.me/ftsomrazh?text=${encodeURIComponent(telegramMessage)}`;
 
   return (
     <div className="product-detail-page salon-detail-page">

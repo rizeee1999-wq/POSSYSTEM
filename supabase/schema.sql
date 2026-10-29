@@ -45,6 +45,21 @@ create index if not exists idx_products_category on products(category_id);
 create index if not exists idx_products_published on products(published);
 create index if not exists idx_products_item_type on products(item_type);
 
+-- ---------- Product Stock In / Restock History --------------------------------
+
+create table if not exists product_stock_logs (
+  id bigint generated always as identity primary key,
+  product_id bigint not null references products(id) on delete cascade,
+  quantity_added integer not null check (quantity_added > 0),
+  stock_after integer not null check (stock_after >= 0),
+  note text,
+  added_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_product_stock_logs_product on product_stock_logs(product_id);
+create index if not exists idx_product_stock_logs_added_at on product_stock_logs(added_at);
+
 -- ---------- Walk-in & Chair Queue -------------------------------------------
 
 create table if not exists queue_tickets (
@@ -163,6 +178,12 @@ create policy "admin full access sales" on sales
 
 drop policy if exists "admin full access sale_items" on sale_items;
 create policy "admin full access sale_items" on sale_items
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- Product Stock Logs
+alter table product_stock_logs enable row level security;
+drop policy if exists "admin full access product_stock_logs" on product_stock_logs;
+create policy "admin full access product_stock_logs" on product_stock_logs
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- ---------- Haircut & Salon Checkout function --------------------------------

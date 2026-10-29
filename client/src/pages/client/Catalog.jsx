@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getBarbers, getCategories, getProducts } from '../../lib/api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { formatKHR, formatUSD, t } from '../../lib/i18n.js';
+import TelegramConnectModal from '../../components/TelegramConnectModal.jsx';
 
 function TelegramIcon() {
   return (
@@ -33,6 +34,39 @@ export default function Catalog() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Client Telegram Connect Modal State
+  const [telegramModalOpen, setTelegramModalOpen] = useState(false);
+  const [clientProfile, setClientProfile] = useState(() => {
+    try {
+      const saved = localStorage.getItem('salon_client_profile');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.username === '@ftsomrazh') {
+          localStorage.removeItem('salon_client_profile');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    // If not connected and not dismissed yet in this session, show friendly overlay after 2.5s
+    const dismissed =
+      sessionStorage.getItem('salon_telegram_modal_dismissed') ||
+      localStorage.getItem('salon_telegram_modal_dismissed');
+
+    if (!clientProfile && !dismissed) {
+      const timer = setTimeout(() => {
+        setTelegramModalOpen(true);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [clientProfile]);
 
   useEffect(() => {
     Promise.all([getCategories(), getBarbers()])
@@ -87,15 +121,27 @@ export default function Catalog() {
                   🔒 {t.adminLoginLink}
                 </Link>
               )}
-              <a
-                href="https://t.me/ftsomrach"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-telegram-book"
-              >
-                <TelegramIcon />
-                {t.telegramContact}
-              </a>
+              {clientProfile ? (
+                <button
+                  type="button"
+                  className="client-connected-pill"
+                  onClick={() => setTelegramModalOpen(true)}
+                  title="ចុចដើម្បីមើល ឬផ្តាច់គណនី"
+                >
+                  <span>👤</span>
+                  <span>{clientProfile.name || clientProfile.username || 'បានភ្ជាប់'}</span>
+                  <span style={{ color: '#0284c7' }}>✓</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-telegram-book"
+                  onClick={() => setTelegramModalOpen(true)}
+                >
+                  <TelegramIcon />
+                  <span>ភ្ជាប់ Telegram</span>
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -124,12 +170,28 @@ export default function Catalog() {
           </div>
 
           <div className="salon-search-row">
-            <input
-              type="text"
-              placeholder={t.searchPlaceholder}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="salon-search-input-wrap">
+              <svg className="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button
+                  type="button"
+                  className="search-clear-btn"
+                  onClick={() => setSearch('')}
+                  title="សម្អាត"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
@@ -273,6 +335,13 @@ export default function Catalog() {
         <p>💈 <strong>{t.appName}</strong> — {t.appSubtitle}</p>
         <p>📍 ភ្នំពេញ, ប្រទេសកម្ពុជា | ម៉ោងបើក៖ ៨:០០ ព្រឹក - ៨:០០ យប់ (ច័ន្ទ - អាទិត្យ)</p>
       </footer>
+
+      {/* Client Telegram Connect Overlay Modal */}
+      <TelegramConnectModal
+        isOpen={telegramModalOpen}
+        onClose={() => setTelegramModalOpen(false)}
+        onConnected={(profile) => setClientProfile(profile)}
+      />
     </div>
   );
 }

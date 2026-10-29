@@ -4,6 +4,7 @@ import {
   adminDeleteBarber,
   adminGetBarbers,
   adminUpdateBarber,
+  adminUploadBarberAvatar,
 } from '../../lib/api.js';
 import { t } from '../../lib/i18n.js';
 
@@ -26,9 +27,23 @@ export default function Barbers() {
   const [form, setForm] = useState(emptyBarberForm);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [localImagePreview, setLocalImagePreview] = useState('');
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!localImagePreview) return undefined;
+    return () => URL.revokeObjectURL(localImagePreview);
+  }, [localImagePreview]);
+
+  useEffect(() => {
+    if (!modalOpen) {
+      setLocalImagePreview('');
+      setUploading(false);
+    }
+  }, [modalOpen]);
 
   async function loadBarbers() {
     setLoading(true);
@@ -51,6 +66,7 @@ export default function Barbers() {
     setEditingId(null);
     setForm(emptyBarberForm);
     setFormError('');
+    setLocalImagePreview('');
     setModalOpen(true);
   }
 
@@ -65,7 +81,26 @@ export default function Barbers() {
       active: barber.active,
     });
     setFormError('');
+    setLocalImagePreview('');
     setModalOpen(true);
+  }
+
+  async function handleImageUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLocalImagePreview(URL.createObjectURL(file));
+    setUploading(true);
+    setFormError('');
+    try {
+      const { url } = await adminUploadBarberAvatar(file);
+      setForm((f) => ({ ...f, avatar_url: url }));
+    } catch (err) {
+      setFormError(`${t.imageUploadFailed || 'ផ្ទុករូបភាពមិនជោគជ័យ'}: ${err.message}`);
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   }
 
   async function handleSave(e) {
@@ -256,29 +291,46 @@ export default function Barbers() {
 
               <div className="form-group">
                 <label>🖼️ {t.avatarUrl}</label>
-                {form.avatar_url && (
+                {(localImagePreview || form.avatar_url) && (
                   <div className="form-image-preview barber-avatar-preview">
                     <img
-                      src={form.avatar_url}
+                      src={localImagePreview || form.avatar_url}
                       alt="Barber Avatar"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     <button
                       type="button"
                       className="form-image-remove-btn"
-                      onClick={() => setForm({ ...form, avatar_url: '' })}
+                      onClick={() => {
+                        setLocalImagePreview('');
+                        setForm((f) => ({ ...f, avatar_url: '' }));
+                      }}
                       title="ដករូបចេញ"
                     >
                       ✕
                     </button>
                   </div>
                 )}
-                <input
-                  type="url"
-                  placeholder="https://example.com/avatar.jpg"
-                  value={form.avatar_url}
-                  onChange={(e) => setForm({ ...form, avatar_url: e.target.value })}
-                />
+
+                <div className="form-file-row">
+                  <label className="btn btn-secondary btn-sm file-upload-label">
+                    📁 {uploading ? (t.uploadingImage || 'កំពុងផ្ទុករូបភាព...') : 'ជ្រើសរើសរូបភាពពីម៉ាស៊ីន'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="ឬបិទភ្ជាប់តំណរូបភាព (https://...)"
+                    value={form.avatar_url}
+                    onChange={(e) => setForm({ ...form, avatar_url: e.target.value })}
+                    style={{ flex: 1 }}
+                  />
+                </div>
               </div>
 
               <div className="form-group checkbox-group">

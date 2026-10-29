@@ -30,6 +30,47 @@ router.post('/admin/sales', requireAdmin, async (req, res) => {
 
   if (error) return res.status(400).json({ error: error.message });
 
+  // If created_at or custom unit prices were specified, update retroactive timestamp and prices
+  const hasCustomPrice = items.some((it) => it.unit_price !== undefined && Number(it.unit_price) >= 0);
+  if (hasCustomPrice || details.created_at) {
+    const saleUpdates = {};
+    if (details.created_at) {
+      saleUpdates.created_at = new Date(details.created_at).toISOString();
+    }
+
+    if (hasCustomPrice) {
+      const { data: currentSaleItems } = await req.supabase
+        .from('sale_items')
+        .select('*')
+        .eq('sale_id', data)
+        .order('id', { ascending: true });
+
+      if (currentSaleItems && currentSaleItems.length > 0) {
+        let newSubtotal = 0;
+        for (let i = 0; i < currentSaleItems.length; i++) {
+          const matched = items[i];
+          if (matched && matched.unit_price !== undefined) {
+            const up = Number(matched.unit_price);
+            const lt = Number((up * currentSaleItems[i].quantity).toFixed(2));
+            newSubtotal += lt;
+            await req.supabase
+              .from('sale_items')
+              .update({ unit_price: up, line_total: lt })
+              .eq('id', currentSaleItems[i].id);
+          } else {
+            newSubtotal += Number(currentSaleItems[i].line_total);
+          }
+        }
+        saleUpdates.subtotal = newSubtotal;
+        saleUpdates.total = newSubtotal + Number(details.tip || 0);
+      }
+    }
+
+    if (Object.keys(saleUpdates).length > 0) {
+      await req.supabase.from('sales').update(saleUpdates).eq('id', data);
+    }
+  }
+
   // data is the new sale's id — fetch it back with relations for the receipt.
   const { data: sale, error: fetchError } = await req.supabase
     .from('sales')

@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { t } from '../lib/i18n.js';
@@ -104,8 +105,81 @@ function HistoryIcon() {
   );
 }
 
+function ChevronDownIcon({ open }) {
+  return (
+    <svg
+      className={`admin-user-chevron ${open ? 'open' : ''}`}
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
 export default function AdminNav() {
   const { user, signOut } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'A';
+  const displayName = user?.email ? user.email.split('@')[0] : 'Admin';
 
   return (
     <header className="admin-nav">
@@ -142,12 +216,79 @@ export default function AdminNav() {
           {t.navSales}
         </NavLink>
       </nav>
-      <div className="admin-nav-user">
-        <span className="user-email">{user?.email}</span>
-        <button onClick={signOut} className="btn-logout">{t.signOut}</button>
-        <NavLink to="/" className="view-site-link">
-          {t.viewClientSite}
-        </NavLink>
+
+      <div className="admin-nav-user" ref={dropdownRef}>
+        <button
+          type="button"
+          className={`admin-user-btn ${isOpen ? 'active' : ''}`}
+          onClick={() => setIsOpen((prev) => !prev)}
+          aria-expanded={isOpen}
+          aria-haspopup="true"
+          title="គណនីគ្រប់គ្រង"
+        >
+          <span className="admin-user-avatar">{userInitial}</span>
+          <span className="admin-user-name">{displayName}</span>
+          <ChevronDownIcon open={isOpen} />
+        </button>
+
+        {isOpen && (
+          <div className="admin-user-dropdown-menu" role="menu">
+            {/* User profile summary */}
+            <div className="dropdown-user-header">
+              <div className="dropdown-user-avatar-lg">{userInitial}</div>
+              <div className="dropdown-user-details">
+                <div className="dropdown-user-email" title={user?.email}>
+                  {user?.email || 'admin@pos.local'}
+                </div>
+                <span className="dropdown-user-role-badge">⭐ អ្នកគ្រប់គ្រង (Admin)</span>
+              </div>
+            </div>
+
+            <div className="dropdown-divider" />
+
+            {/* Menu items */}
+            <div className="dropdown-section-title">សកម្មភាពរហ័ស</div>
+
+            <NavLink
+              to="/"
+              className="dropdown-item"
+              onClick={() => setIsOpen(false)}
+            >
+              <ExternalLinkIcon />
+              <div className="dropdown-item-text">
+                <span className="dropdown-item-label">{t.viewClientSite}</span>
+                <span className="dropdown-item-hint">មើលទំព័រអតិថិជនសាធារណៈ</span>
+              </div>
+            </NavLink>
+
+            {/* Ready for future feature slot: Store Profile & Settings */}
+            <div
+              className="dropdown-item future-feature"
+              title="មុខងារនេះនឹងដាក់ឱ្យប្រើប្រាស់ឆាប់ៗនេះ"
+            >
+              <SettingsIcon />
+              <div className="dropdown-item-text">
+                <span className="dropdown-item-label">ការកំណត់ & ព័ត៌មានហាង</span>
+                <span className="badge-coming-soon">ឆាប់ៗនេះ</span>
+              </div>
+            </div>
+
+            <div className="dropdown-divider" />
+
+            {/* Sign out */}
+            <button
+              type="button"
+              className="dropdown-item logout-item"
+              onClick={() => {
+                setIsOpen(false);
+                signOut();
+              }}
+            >
+              <LogoutIcon />
+              <span className="dropdown-item-label">{t.signOut}</span>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

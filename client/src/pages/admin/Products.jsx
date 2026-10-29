@@ -1,4 +1,7 @@
+import { useState, useEffect } from 'react';
 import {
+  adminAddProductStock,
+  adminGetProductStockLogs,
   adminCreateCategory,
   adminUpdateCategory,
   adminDeleteCategory,
@@ -48,6 +51,18 @@ export default function Products() {
   const [newCatName, setNewCatName] = useState('');
   const [catError, setCatError] = useState('');
   const [catSaving, setCatSaving] = useState(false);
+
+  // Stock Management & History Modal State
+  const [stockModalOpen, setStockModalOpen] = useState(false);
+  const [stockTarget, setStockTarget] = useState(null);
+  const [stockLogs, setStockLogs] = useState([]);
+  const [stockLogsLoading, setStockLogsLoading] = useState(false);
+  const [stockAddQty, setStockAddQty] = useState('');
+  const [stockAddDate, setStockAddDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [stockAddNote, setStockAddNote] = useState('');
+  const [stockSaving, setStockSaving] = useState(false);
+  const [stockError, setStockError] = useState('');
+  const [stockSuccess, setStockSuccess] = useState('');
 
   const [search, setSearch] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState('');
@@ -282,6 +297,77 @@ export default function Products() {
     }
   }
 
+  async function openStockModal(p) {
+    setStockTarget(p);
+    setStockAddQty('');
+    setStockAddDate(new Date().toISOString().slice(0, 10));
+    setStockAddNote('');
+    setStockError('');
+    setStockSuccess('');
+    setStockModalOpen(true);
+    setStockLogsLoading(true);
+    try {
+      const logs = await adminGetProductStockLogs(p.id);
+      setStockLogs(logs || []);
+    } catch {
+      setStockLogs([]);
+    } finally {
+      setStockLogsLoading(false);
+    }
+  }
+
+  async function handleStockSubmit(e) {
+    e.preventDefault();
+    const qty = Number(stockAddQty);
+    if (!qty || qty <= 0) {
+      setStockError('សូមបញ្ចូលចំនួនបន្ថែមដែលធំជាង ០');
+      return;
+    }
+    setStockSaving(true);
+    setStockError('');
+    setStockSuccess('');
+    try {
+      const res = await adminAddProductStock(stockTarget.id, {
+        quantity: qty,
+        added_at: stockAddDate ? new Date(stockAddDate).toISOString() : new Date().toISOString(),
+        note: stockAddNote,
+      });
+
+      const updatedStock = res.product.stock;
+      setProducts((prev) =>
+        prev.map((item) => (item.id === stockTarget.id ? { ...item, stock: updatedStock } : item))
+      );
+      setStockTarget((prev) => ({ ...prev, stock: updatedStock }));
+
+      if (res.log) {
+        setStockLogs((prev) => [res.log, ...prev]);
+      }
+      setStockAddQty('');
+      setStockAddNote('');
+      setStockSuccess(`បានបន្ថែម +${qty} ចូលស្តុកដោយជោគជ័យ!`);
+    } catch (err) {
+      setStockError(err.message || 'បន្ថែមស្តុកមិនជោគជ័យ');
+    } finally {
+      setStockSaving(false);
+    }
+  }
+
+  function formatStockDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('km-KH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  }
+
   return (
     <div className="admin-page">
       <div className="admin-header">
@@ -405,9 +491,17 @@ export default function Products() {
                       {p.item_type === 'service' ? (
                         <span className="badge badge-duration">⏱️ {p.duration_min} នាទី</span>
                       ) : (
-                        <span className={`badge ${p.stock <= 5 ? 'badge-lowstock' : 'badge-outline'}`}>
-                          📦 {p.stock} កំប៉ុង/ដប
-                        </span>
+                        <div className="table-stock-control">
+                          <button
+                            type="button"
+                            className={`stock-pill-btn ${p.stock <= 5 ? 'stock-low' : 'stock-ok'}`}
+                            onClick={() => openStockModal(p)}
+                            title="ចុចដើម្បីមើលប្រវត្តិស្តុក ឬបញ្ចូលស្តុកបន្ថែម"
+                          >
+                            <span className="stock-qty-text">📦 {p.stock} កំប៉ុង/ដប</span>
+                            <span className="stock-btn-plus">+ ថែមស្តុក</span>
+                          </button>
+                        </div>
                       )}
                     </td>
                     <td style={{ textAlign: 'center' }}>
@@ -443,19 +537,23 @@ export default function Products() {
           {totalPages > 1 && (
             <div className="pagination">
               <button
+                type="button"
                 className="btn btn-outline btn-sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
-                {t.previousPage}
+                ← {t.previousPage}
               </button>
-              <span>{currentPage} / {totalPages}</span>
+              <span className="pagination-info">
+                {currentPage} / {totalPages}
+              </span>
               <button
+                type="button"
                 className="btn btn-outline btn-sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
               >
-                {t.nextPage}
+                {t.nextPage} →
               </button>
             </div>
           )}
@@ -805,6 +903,158 @@ export default function Products() {
                 onClick={() => setCategoryModalOpen(false)}
               >
                 រួចរាល់
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stock Management & History Modal */}
+      {stockModalOpen && stockTarget && (
+        <div className="modal-backdrop" onClick={() => setStockModalOpen(false)}>
+          <div className="modal-card stock-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2>📦 {t.stockHistoryTitle}</h2>
+                <p className="modal-subtitle" style={{ margin: '0.25rem 0 0', color: 'var(--muted)', fontSize: '0.88rem' }}>
+                  <strong>{stockTarget.name}</strong> • {stockTarget.categories?.name || 'គ្មានប្រភេទ'}
+                </p>
+              </div>
+              <button className="modal-close" onClick={() => setStockModalOpen(false)}>×</button>
+            </div>
+
+            {/* Current Stock Banner */}
+            <div className="stock-current-banner">
+              <div className="stock-current-info">
+                <span className="stock-current-label">{t.currentStock}</span>
+                <span className="stock-current-value">
+                  {stockTarget.stock} <small>កំប៉ុង/ដប</small>
+                </span>
+              </div>
+              <span className={`badge ${stockTarget.stock <= 5 ? 'badge-lowstock' : 'badge-instock'}`}>
+                {stockTarget.stock <= 5 ? 'ជិតអស់ស្តុក' : 'មានក្នុងស្តុក'}
+              </span>
+            </div>
+
+            {/* Add Stock Form */}
+            <form onSubmit={handleStockSubmit} className="stock-add-form">
+              <h3 className="stock-form-title">+ បញ្ចូលស្តុកបន្ថែម (Stock-In)</h3>
+
+              {stockError && <div className="banner banner-error">{stockError}</div>}
+              {stockSuccess && <div className="banner banner-success">{stockSuccess}</div>}
+
+              <div className="stock-form-grid">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>{t.quantityToAdd} *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="ឧ. 3, 5, 10..."
+                    value={stockAddQty}
+                    onChange={(e) => setStockAddQty(e.target.value)}
+                    required
+                  />
+                  <div className="quick-qty-pills">
+                    {[1, 3, 5, 10, 20].map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        className="btn-quick-qty"
+                        onClick={() => setStockAddQty(String(Number(stockAddQty || 0) + q))}
+                      >
+                        +{q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>{t.restockDate} *</label>
+                  <input
+                    type="date"
+                    value={stockAddDate}
+                    onChange={(e) => setStockAddDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '0.85rem' }}>
+                <label>{t.stockNote}</label>
+                <input
+                  type="text"
+                  placeholder="ឧ. ទិញថែមពីផ្សារធំថ្មី, ក្រុមហ៊ុនដឹកមកដល់..."
+                  value={stockAddNote}
+                  onChange={(e) => setStockAddNote(e.target.value)}
+                />
+              </div>
+
+              <div className="stock-form-actions">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={stockSaving}
+                >
+                  {stockSaving ? t.savingStock : t.saveStock}
+                </button>
+              </div>
+            </form>
+
+            <div className="stock-section-divider" />
+
+            {/* Stock History Timeline */}
+            <div className="stock-history-section">
+              <div className="stock-history-header">
+                <h3>{t.stockHistory}</h3>
+                <span className="stock-history-count">{stockLogs.length} កំណត់ត្រា</span>
+              </div>
+
+              {stockLogsLoading ? (
+                <div className="page-loading" style={{ padding: '1rem 0' }}>{t.loading}</div>
+              ) : stockLogs.length === 0 ? (
+                <div className="stock-empty-history">
+                  <span style={{ fontSize: '2rem' }}>📦</span>
+                  <p style={{ margin: '0.5rem 0 0', color: 'var(--muted)', fontSize: '0.88rem' }}>{t.noStockLogs}</p>
+                </div>
+              ) : (
+                <div className="stock-timeline">
+                  {stockLogs.map((log) => (
+                    <div key={log.id || log.added_at} className="stock-timeline-item">
+                      <div className="stock-timeline-bullet" />
+                      <div className="stock-timeline-content">
+                        <div className="stock-timeline-top">
+                          <span className="stock-timeline-date">
+                            📅 {formatStockDate(log.added_at || log.created_at)}
+                          </span>
+                          <span className="stock-badge-added">
+                            +{log.quantity_added} កំប៉ុង
+                          </span>
+                        </div>
+                        <div className="stock-timeline-details">
+                          <span className="stock-after-text">
+                            ស្តុកឡើងដល់៖ <strong>{log.stock_after}</strong>
+                          </span>
+                          {log.note && (
+                            <span className="stock-timeline-note">
+                              📝 {log.note}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setStockModalOpen(false)}
+              >
+                {t.close}
               </button>
             </div>
           </div>

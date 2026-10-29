@@ -231,4 +231,77 @@ router.delete('/admin/products/:id', requireAdmin, async (req, res) => {
   res.status(204).end();
 });
 
+// POST /api/admin/products/:id/restock
+router.post('/admin/products/:id/restock', requireAdmin, async (req, res) => {
+  const { quantity, added_at, note } = req.body || {};
+  const qty = Number(quantity);
+  if (!qty || isNaN(qty) || qty <= 0) {
+    return res.status(400).json({ error: 'Quantity must be a positive number' });
+  }
+
+  // 1. Fetch current product
+  const { data: product, error: fetchErr } = await req.supabase
+    .from('products')
+    .select('id, name, stock, item_type')
+    .eq('id', req.params.id)
+    .single();
+
+  if (fetchErr || !product) {
+    return res.status(404).json({ error: 'Product not found' });
+  }
+
+  const currentStock = Number(product.stock || 0);
+  const newStock = currentStock + qty;
+
+  // 2. Update product stock
+  const { data: updatedProduct, error: updateErr } = await req.supabase
+    .from('products')
+    .update({ stock: newStock })
+    .eq('id', req.params.id)
+    .select('*, categories(name)')
+    .single();
+
+  if (updateErr) return res.status(400).json({ error: updateErr.message });
+
+  // 3. Insert stock log
+  const logEntry = {
+    product_id: Number(req.params.id),
+    quantity_added: qty,
+    stock_after: newStock,
+    note: note ? String(note).trim() : null,
+    added_at: added_at ? new Date(added_at).toISOString() : new Date().toISOString(),
+  };
+
+  const { data: logData, error: logErr } = await req.supabase
+    .from('product_stock_logs')
+    .insert(logEntry)
+    .select()
+    .single();
+
+  if (logErr) {
+    console.warn('Warning: product_stock_logs insert failed (table may not be created yet):', logErr.message);
+  }
+
+  res.status(200).json({
+    product: updatedProduct,
+    log: logData || logEntry,
+    warning: logErr ? logErr.message : undefined,
+  });
+});
+
+// GET /api/admin/products/:id/stock-logs
+router.get('/admin/products/:id/stock-logs', requireAdmin, async (req, res) => {
+  const { data, error } = await req.supabase
+    .from('product_stock_logs')
+    .select('*')
+    .eq('product_id', req.params.id)
+    .order('added_at', { ascending: false });
+
+  if (error) {
+    return res.json([]);
+  }
+
+  res.json(data || []);
+});
+
 export default router;
