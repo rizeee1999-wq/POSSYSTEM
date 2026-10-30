@@ -4634,3 +4634,636 @@ table.data-table tbody tr:hover {
   transform: translateY(-1px);
 }
 
+/* ========================================================
+   EXCHANGE RATE DROPDOWN & SMART CASH CALCULATOR STYLES
+   ======================================================== */
+
+.currency-rate-badge.clickable {
+  cursor: pointer;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  transition: all 0.2s ease;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.currency-rate-badge.clickable:hover {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: var(--salon-gold-bright);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.rate-badge-edit-hint {
+  font-size: 0.72rem;
+  color: var(--salon-gold-bright);
+  font-weight: 700;
+  margin-left: 0.35rem;
+}
+
+/* Dropdown Rate Card */
+.dropdown-rate-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  margin: 0.35rem 0.25rem 0.65rem 0.25rem;
+}
+
+.dropdown-rate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdown-rate-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dropdown-rate-icon {
+  font-size: 1.15rem;
+}
+
+.dropdown-rate-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.dropdown-rate-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.dropdown-rate-value {
+  font-size: 0.95rem;
+  color: var(--salon-gold-bright);
+  font-weight: 800;
+}
+
+.dropdown-rate-edit-btn {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--salon-gold-bright);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dropdown-rate-edit-btn:hover,
+.dropdown-rate-edit-btn.active {
+  background: var(--salon-gold-bright);
+  color: #0b0f19;
+}
+
+.dropdown-rate-editor {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dropdown-rate-input-row {
+  display: flex;
+  align-items: center;
+  background: #080d19;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 0.2rem 0.5rem;
+}
+
+.rate-currency-prefix,
+.rate-currency-suffix {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.dropdown-rate-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-align: right;
+  padding: 0.25rem 0.4rem;
+  outline: none;
+  width: 100%;
+}
+
+.dropdown-rate-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.3rem;
+}
+
+.rate-preset-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.25rem 0.1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.rate-preset-chip:hover,
+.rate-preset-chip.active {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: var(--salon-gold-bright);
+  color: var(--salon-gold-bright);
+}
+
+.btn-rate-save {
+  background: var(--salon-gold-gradient);
+  color: #0b0f19;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.45rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-rate-save:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-rate-save.success {
+  background: #10b981;
+  color: #ffffff;
+}
+
+/* Rate Modal on Sell Page */
+.rate-modal-card {
+  max-width: 440px;
+  width: 92%;
+}
+
+.rate-modal-desc {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.rate-input-large-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--surface-alt);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.rate-input-large-wrapper:focus-within {
+  border-color: var(--salon-gold-bright);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+.rate-lg-prefix,
+.rate-lg-suffix {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.rate-lg-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--text);
+  text-align: right;
+  padding: 0 0.5rem;
+  outline: none;
+}
+
+.rate-modal-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.preset-btn {
+  flex: 1;
+  min-width: 70px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.55rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-btn:hover,
+.preset-btn.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--salon-gold-bright);
+  color: var(--salon-gold-bright);
+}
+
+/* ========================================================
+   SMART CASH CALCULATOR & DUAL CHANGE DISPLAY
+   ======================================================== */
+
+.cash-calculator-box {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.cash-calc-header {
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cash-calc-title {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.cash-type-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.25rem;
+  border-radius: 9px;
+}
+
+.cash-type-tab {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.4rem 0.2rem;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cash-type-tab:hover {
+  color: var(--text);
+}
+
+.cash-type-tab.active {
+  background: var(--salon-gold-gradient);
+  color: #0b0f19;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.cash-calc-body {
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.calc-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.calc-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.7rem;
+  position: relative;
+  transition: border-color 0.18s ease;
+}
+
+.calc-input-wrapper:focus-within {
+  border-color: var(--salon-gold-bright);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.calc-symbol,
+.calc-symbol-suffix {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--salon-gold-bright);
+}
+
+.calc-main-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--text);
+  padding: 0.2rem 0.4rem;
+  outline: none;
+  width: 100%;
+}
+
+.calc-main-input.text-right {
+  text-align: right;
+}
+
+.calc-clear-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  margin-left: 0.35rem;
+}
+
+.calc-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+/* Quick Bills Grid */
+.quick-bills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.quick-bill-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-bill-btn:hover,
+.quick-bill-btn.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--salon-gold-bright);
+  color: var(--salon-gold-bright);
+}
+
+.quick-bill-btn.exact-bill {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  font-weight: 800;
+}
+
+.quick-bill-btn.exact-bill:hover {
+  background: #10b981;
+  color: #ffffff;
+}
+
+/* Mixed Inputs */
+.mixed-inputs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.mixed-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.15);
+  padding: 0.45rem 0.65rem;
+  border-radius: 7px;
+  margin-top: 0.5rem;
+}
+
+.mixed-summary-row strong {
+  color: var(--text);
+}
+
+.calc-text-clear {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Change Display Card */
+.change-display-card {
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  margin-top: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.change-display-card.insufficient {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.change-insufficient-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.change-status-title {
+  color: #ef4444;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.change-deficit-details {
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.deficit-usd {
+  color: #ef4444;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.deficit-khr {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
+
+/* Exact */
+.change-display-card.exact {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.change-exact-box {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.change-exact-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.change-exact-title {
+  color: #10b981;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.change-exact-box small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Surplus / Change Due */
+.change-display-card.surplus {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.change-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 0.45rem;
+}
+
+/* KHR Change */
+.khr-change-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.khr-change-amount strong {
+  color: #10b981;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.khr-change-amount small {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Dual Change (USD + KHR) */
+.dual-breakdown-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bill-chip {
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+}
+
+.bill-chip.dollar-chip {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.bill-chip.riel-chip {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.bill-sub {
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.dollar-chip .bill-main {
+  color: #10b981;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.riel-chip .bill-main {
+  color: var(--salon-gold-bright);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.plus-sign {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.riel-alternative-hint {
+  margin-top: 0.55rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.riel-alternative-hint strong {
+  color: var(--text);
+  font-weight: 800;
+}
+
+

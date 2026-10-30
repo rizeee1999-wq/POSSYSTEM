@@ -1,19 +1,77 @@
-// All user-facing text in 100% pure Khmer language
-export const EXCHANGE_RATE_KHR = 4100;
+import { useState, useEffect } from 'react';
+
+// Default exchange rate fallback
+export const DEFAULT_EXCHANGE_RATE = 4100;
+export const EXCHANGE_RATE_KHR = DEFAULT_EXCHANGE_RATE;
+
+// Read dynamic exchange rate from localStorage with safe fallback
+export function getExchangeRate() {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const stored = window.localStorage.getItem('salon_exchange_rate');
+      if (stored) {
+        const parsed = parseInt(stored, 10);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    } catch {
+      // Ignore localStorage access issues
+    }
+  }
+  return DEFAULT_EXCHANGE_RATE;
+}
+
+// Persist dynamic exchange rate and broadcast change to all components
+export function setExchangeRate(newRate) {
+  const num = Math.round(Number(newRate));
+  if (isNaN(num) || num <= 0) return DEFAULT_EXCHANGE_RATE;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem('salon_exchange_rate', String(num));
+    } catch {
+      // Ignore
+    }
+    window.dispatchEvent(new CustomEvent('exchange_rate_changed', { detail: num }));
+  }
+  return num;
+}
+
+// React hook to reactively track exchange rate changes
+export function useExchangeRate() {
+  const [rate, setRate] = useState(getExchangeRate);
+
+  useEffect(() => {
+    function handleRateChange(e) {
+      if (e?.detail) {
+        setRate(Number(e.detail));
+      } else {
+        setRate(getExchangeRate());
+      }
+    }
+    window.addEventListener('exchange_rate_changed', handleRateChange);
+    window.addEventListener('storage', handleRateChange);
+    return () => {
+      window.removeEventListener('exchange_rate_changed', handleRateChange);
+      window.removeEventListener('storage', handleRateChange);
+    };
+  }, []);
+
+  return [rate, setExchangeRate];
+}
 
 export function formatUSD(amount) {
   const num = Number(amount) || 0;
   return `$${num.toFixed(2)}`;
 }
 
-export function formatKHR(amountUSD) {
+export function formatKHR(amountUSD, customRate = null) {
   const num = Number(amountUSD) || 0;
-  const khr = Math.round(num * EXCHANGE_RATE_KHR);
+  const rate = customRate || getExchangeRate();
+  const khr = Math.round(num * rate);
   return `${khr.toLocaleString()} ៛`;
 }
 
-export function formatDualPrice(amountUSD) {
-  return `${formatUSD(amountUSD)} (${formatKHR(amountUSD)})`;
+export function formatDualPrice(amountUSD, customRate = null) {
+  return `${formatUSD(amountUSD)} (${formatKHR(amountUSD, customRate)})`;
 }
 
 export const t = {
@@ -191,7 +249,8 @@ export const t = {
   grandTotal: 'សរុបត្រូវទូទាត់',
   paymentMethod: 'វិធីសាស្ត្រទូទាត់ប្រាក់',
   cashUsd: '💵 សាច់ប្រាក់ដុល្លារ ($)',
-  cashKhr: '💵 សាច់ប្រាក់រៀល (៛)',
+  cashKhr: '🇰🇭 សាច់ប្រាក់រៀល (៛)',
+  cashMixed: '🔀 សាច់ប្រាក់ចម្រុះ ($ + ៛)',
   abaKhqr: '📱 ស្កេនទូទាត់ប្រាក់ (KHQR)',
   card: '💳 កាតធនាគារ',
   walkinDefault: 'អតិថិជនទូទៅ',
@@ -200,8 +259,18 @@ export const t = {
   saleComplete: 'ការទូទាត់ជោគជ័យ!',
   saleFailed: 'ការទូទាត់មិនជោគជ័យ',
   noSellResults: 'រកមិនឃើញសេវាកម្ម ឬផលិតផលនេះទេ',
-  receivedAmount: 'ប្រាក់ទទួលបាន ($)',
+  receivedAmount: 'ប្រាក់ទទួលបាន',
+  receivedUsd: 'ប្រាក់ទទួលជាដុល្លារ ($)',
+  receivedKhr: 'ប្រាក់ទទួលជារៀល (៛)',
   changeDue: 'ប្រាក់អាប់ជូនភ្ញៀវ',
+  changeDueUsdKhr: 'ប្រាក់អាប់ ($ + ៛)',
+  changeDueKhr: 'ប្រាក់អាប់ជារៀល (៛)',
+  exactAmount: 'គ្រប់ចំនួន (គ្មានប្រាក់អាប់)',
+  insufficientAmount: 'ប្រាក់មិនទាន់គ្រប់ចំនួន',
+  allInRiel: 'ឬអាប់ជារៀលទាំងអស់',
+  exchangeRate: 'អត្រាប្តូរប្រាក់',
+  exchangeRateTitle: 'អត្រាប្តូរប្រាក់ ($ ➔ ៛)',
+  rateSavedSuccess: 'បានរក្សាទុកអត្រាប្តូរប្រាក់!',
 
   // ---- Receipt Modal ----
   receiptTitle: 'វិក្កយបត្រទូទាត់ប្រាក់',

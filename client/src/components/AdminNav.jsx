@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { t } from '../lib/i18n.js';
+import { t, useExchangeRate } from '../lib/i18n.js';
 
 function BarberScissorsIcon() {
   return (
@@ -157,6 +157,16 @@ export default function AdminNav() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Exchange rate management
+  const [exchangeRate, updateExchangeRate] = useExchangeRate();
+  const [isEditingRate, setIsEditingRate] = useState(false);
+  const [rateInput, setRateInput] = useState(String(exchangeRate));
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    setRateInput(String(exchangeRate));
+  }, [exchangeRate]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -260,6 +270,83 @@ export default function AdminNav() {
                 <span className="dropdown-item-hint">មើលទំព័រអតិថិជនសាធារណៈ</span>
               </div>
             </NavLink>
+
+            {/* Exchange Rate Setting Card */}
+            <div className="dropdown-divider" />
+            <div className="dropdown-section-title">អត្រាប្តូរប្រាក់ (Exchange Rate)</div>
+            <div className="dropdown-rate-card">
+              <div className="dropdown-rate-header">
+                <div className="dropdown-rate-info">
+                  <span className="dropdown-rate-icon">💱</span>
+                  <div className="dropdown-rate-text">
+                    <span className="dropdown-rate-label">1$ =</span>
+                    <strong className="dropdown-rate-value">{Number(exchangeRate).toLocaleString()} ៛</strong>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={`dropdown-rate-edit-btn ${isEditingRate ? 'active' : ''}`}
+                  onClick={() => {
+                    setIsEditingRate(!isEditingRate);
+                    setSaveSuccess(false);
+                  }}
+                  title="កែសម្រួលអត្រាប្តូរប្រាក់"
+                >
+                  {isEditingRate ? 'បិទ' : 'កែប្រែ ✏️'}
+                </button>
+              </div>
+
+              {isEditingRate && (
+                <div className="dropdown-rate-editor">
+                  <div className="dropdown-rate-input-row">
+                    <span className="rate-currency-prefix">$1.00 =</span>
+                    <input
+                      type="number"
+                      className="dropdown-rate-input"
+                      value={rateInput}
+                      step="10"
+                      min="1000"
+                      max="10000"
+                      onChange={(e) => setRateInput(e.target.value)}
+                      placeholder="4100"
+                      autoFocus
+                    />
+                    <span className="rate-currency-suffix">៛</span>
+                  </div>
+
+                  <div className="dropdown-rate-presets">
+                    {[4000, 4100, 4120, 4150].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        className={`rate-preset-chip ${Number(rateInput) === preset ? 'active' : ''}`}
+                        onClick={() => setRateInput(String(preset))}
+                      >
+                        {preset.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`btn-rate-save ${saveSuccess ? 'success' : ''}`}
+                    onClick={() => {
+                      const val = parseInt(rateInput, 10);
+                      if (val && val > 0) {
+                        updateExchangeRate(val);
+                        setSaveSuccess(true);
+                        setTimeout(() => {
+                          setSaveSuccess(false);
+                          setIsEditingRate(false);
+                        }, 1000);
+                      }
+                    }}
+                  >
+                    {saveSuccess ? '✓ រក្សាទុករួចរាល់!' : '✓ រក្សាទុកអត្រាថ្មី'}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Ready for future feature slot: Store Profile & Settings */}
             <div

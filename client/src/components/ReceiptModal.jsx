@@ -166,6 +166,8 @@ export default function ReceiptModal({ receipt, onClose }) {
                 ? 'សាច់ប្រាក់ដុល្លារ ($)'
                 : receipt.payment_method === 'cash_khr'
                 ? 'សាច់ប្រាក់រៀល (៛)'
+                : receipt.payment_method === 'cash_mixed'
+                ? 'សាច់ប្រាក់ចម្រុះ ($ + ៛)'
                 : receipt.payment_method === 'aba_khqr'
                 ? 'ស្កេនទូទាត់ (KHQR)'
                 : receipt.payment_method === 'card'

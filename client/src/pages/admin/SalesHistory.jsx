@@ -380,7 +380,8 @@ export default function SalesHistory() {
 
   const paymentLabels = {
     cash_usd: '💵 សាច់ប្រាក់ដុល្លារ ($)',
-    cash_khr: '💵 សាច់ប្រាក់រៀល (៛)',
+    cash_khr: '🇰🇭 សាច់ប្រាក់រៀល (៛)',
+    cash_mixed: '🔀 សាច់ប្រាក់ចម្រុះ ($ + ៛)',
     aba_khqr: '📱 ស្កេនទូទាត់ (KHQR)',
     card: '💳 កាតធនាគារ',
   };
@@ -681,7 +682,8 @@ export default function SalesHistory() {
                     onChange={(e) => setCreateForm({ ...createForm, payment_method: e.target.value })}
                   >
                     <option value="cash_usd">💵 សាច់ប្រាក់ដុល្លារ ($)</option>
-                    <option value="cash_khr">💵 សាច់ប្រាក់រៀល (៛)</option>
+                    <option value="cash_khr">🇰🇭 សាច់ប្រាក់រៀល (៛)</option>
+                    <option value="cash_mixed">🔀 សាច់ប្រាក់ចម្រុះ ($ + ៛)</option>
                     <option value="aba_khqr">📱 ស្កេនទូទាត់ (KHQR)</option>
                     <option value="card">💳 កាតធនាគារ</option>
                   </select>
@@ -940,7 +942,8 @@ export default function SalesHistory() {
                     onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
                   >
                     <option value="cash_usd">💵 សាច់ប្រាក់ដុល្លារ ($)</option>
-                    <option value="cash_khr">💵 សាច់ប្រាក់រៀល (៛)</option>
+                    <option value="cash_khr">🇰🇭 សាច់ប្រាក់រៀល (៛)</option>
+                    <option value="cash_mixed">🔀 សាច់ប្រាក់ចម្រុះ ($ + ៛)</option>
                     <option value="aba_khqr">📱 ស្កេនទូទាត់ (KHQR)</option>
                     <option value="card">💳 កាតធនាគារ</option>
                   </select>

@@ -8,11 +8,11 @@ import {
   getCategories,
 } from '../../lib/api.js';
 import {
-  EXCHANGE_RATE_KHR,
   formatDualPrice,
   formatKHR,
   formatUSD,
   t,
+  useExchangeRate,
 } from '../../lib/i18n.js';
 import ReceiptModal from '../../components/ReceiptModal.jsx';
 
@@ -38,8 +38,19 @@ export default function Sell() {
   const [tip, setTip] = useState(0);
   const [notes, setNotes] = useState(queueState.notes || '');
 
-  // Cash payment helper
-  const [receivedCash, setReceivedCash] = useState('');
+  // Dynamic Exchange Rate
+  const [exchangeRate, updateExchangeRate] = useExchangeRate();
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [tempRate, setTempRate] = useState(String(exchangeRate));
+
+  useEffect(() => {
+    setTempRate(String(exchangeRate));
+  }, [exchangeRate]);
+
+  // Cash payment details
+  const [cashInputMode, setCashInputMode] = useState('usd'); // 'usd' | 'khr' | 'mixed'
+  const [receivedUSD, setReceivedUSD] = useState('');
+  const [receivedKHR, setReceivedKHR] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -158,10 +169,49 @@ export default function Sell() {
     [cart]
   );
   const totalUSD = subtotalUSD + Number(tip || 0);
-  const totalKHR = Math.round(totalUSD * EXCHANGE_RATE_KHR);
+  const totalKHR = Math.round(totalUSD * exchangeRate);
 
-  const changeDueUSD = receivedCash ? Math.max(0, Number(receivedCash) - totalUSD) : 0;
-  const changeDueKHR = Math.round(changeDueUSD * EXCHANGE_RATE_KHR);
+  // Total received in USD equivalent
+  const totalReceivedUSD = useMemo(() => {
+    if (cashInputMode === 'usd') {
+      return Number(receivedUSD || 0);
+    }
+    if (cashInputMode === 'khr') {
+      return Number(receivedKHR || 0) / exchangeRate;
+    }
+    // Mixed mode ($ + ៛)
+    return Number(receivedUSD || 0) + (Number(receivedKHR || 0) / exchangeRate);
+  }, [cashInputMode, receivedUSD, receivedKHR, exchangeRate]);
+
+  const totalReceivedKHR = Math.round(totalReceivedUSD * exchangeRate);
+
+  // Has cashier entered any cash?
+  const hasEnteredCash = Boolean(
+    (cashInputMode === 'usd' && receivedUSD !== '') ||
+    (cashInputMode === 'khr' && receivedKHR !== '') ||
+    (cashInputMode === 'mixed' && (receivedUSD !== '' || receivedKHR !== ''))
+  );
+
+  const diffUSD = totalReceivedUSD - totalUSD;
+  const isInsufficient = hasEnteredCash && diffUSD < -0.005;
+  const isExact = hasEnteredCash && Math.abs(diffUSD) <= 0.005;
+  const isChangeDue = hasEnteredCash && diffUSD > 0.005;
+
+  const deficitUSD = Math.max(0, totalUSD - totalReceivedUSD);
+  const deficitKHR = Math.round(deficitUSD * exchangeRate);
+
+  const surplusUSD = Math.max(0, diffUSD);
+  const totalChangeKHR = Math.round((surplusUSD * exchangeRate) / 100) * 100;
+
+  // Breakdown for USD or Mixed payment: Dollars + Riel remainder
+  const rawDollars = Math.floor(surplusUSD + 0.0001);
+  const centsRemainder = surplusUSD - rawDollars;
+  let rielRemainder = Math.round((centsRemainder * exchangeRate) / 100) * 100;
+  let dollarsBack = rawDollars;
+  if (rielRemainder >= exchangeRate) {
+    dollarsBack += 1;
+    rielRemainder -= exchangeRate;
+  }
 
   async function handleCheckout() {
     if (cart.length === 0) return;
@@ -199,7 +249,10 @@ export default function Sell() {
       setCustomerPhone('');
       setTip(0);
       setNotes('');
-      setReceivedCash('');
+      setReceivedUSD('');
+      setReceivedKHR('');
+      setCashInputMode('usd');
+      setPaymentMethod('cash_usd');
       await loadData();
     } catch (e) {
       alert(`Checkout failed: ${e.message}`);
@@ -220,10 +273,16 @@ export default function Sell() {
           <p className="admin-subtitle">គិតប្រាក់សេវាកាត់សក់ និងផលិតផលថែរក្សាសក់</p>
         </div>
 
-        {/* Currency Rate pill */}
-        <div className="currency-rate-badge">
-          💵 អត្រាប្តូរប្រាក់៖ <strong>$1.00 = {EXCHANGE_RATE_KHR.toLocaleString()} ៛</strong>
-        </div>
+        {/* Currency Rate pill (clickable) */}
+        <button
+          type="button"
+          className="currency-rate-badge clickable"
+          onClick={() => setShowRateModal(true)}
+          title="ចុចដើម្បីកែសម្រួលអត្រាប្តូរប្រាក់"
+        >
+          💵 អត្រាប្តូរប្រាក់៖ <strong>$1.00 = {exchangeRate.toLocaleString()} ៛</strong>
+          <span className="rate-badge-edit-hint"> ✏️ កែប្រែ</span>
+        </button>
       </div>
 
       <div className="sell-layout">
@@ -441,55 +500,332 @@ export default function Sell() {
                   <button
                     type="button"
                     className={`payment-btn ${paymentMethod === 'cash_usd' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('cash_usd')}
+                    onClick={() => {
+                      setPaymentMethod('cash_usd');
+                      setCashInputMode('usd');
+                    }}
                   >
-                    💵 ប្រាក់ដុល្លារ ($)
+                    💵 {t.cashUsd}
                   </button>
                   <button
                     type="button"
                     className={`payment-btn ${paymentMethod === 'cash_khr' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('cash_khr')}
+                    onClick={() => {
+                      setPaymentMethod('cash_khr');
+                      setCashInputMode('khr');
+                    }}
                   >
-                    💵 ប្រាក់រៀល (៛)
+                    🇰🇭 {t.cashKhr}
+                  </button>
+                  <button
+                    type="button"
+                    className={`payment-btn ${paymentMethod === 'cash_mixed' ? 'active' : ''}`}
+                    onClick={() => {
+                      setPaymentMethod('cash_mixed');
+                      setCashInputMode('mixed');
+                    }}
+                  >
+                    {t.cashMixed}
                   </button>
                   <button
                     type="button"
                     className={`payment-btn ${paymentMethod === 'aba_khqr' ? 'active' : ''}`}
                     onClick={() => setPaymentMethod('aba_khqr')}
                   >
-                    📱 ស្កេនទូទាត់ (KHQR)
+                    {t.abaKhqr}
                   </button>
                   <button
                     type="button"
                     className={`payment-btn ${paymentMethod === 'card' ? 'active' : ''}`}
                     onClick={() => setPaymentMethod('card')}
                   >
-                    💳 កាតធនាគារ
+                    {t.card}
                   </button>
                 </div>
               </div>
 
-              {/* Cash received & Change calculator */}
-              {(paymentMethod === 'cash_usd' || paymentMethod === 'cash_khr') && (
-                <div className="cash-calculator">
-                  <div className="calc-row">
-                    <span>{t.receivedAmount}៖</span>
-                    <input
-                      type="number"
-                      step="0.5"
-                      placeholder={`$${totalUSD.toFixed(2)}`}
-                      value={receivedCash}
-                      onChange={(e) => setReceivedCash(e.target.value)}
-                    />
-                  </div>
-                  {receivedCash && Number(receivedCash) >= totalUSD && (
-                    <div className="calc-change">
-                      <span>{t.changeDue}៖</span>
-                      <strong className="change-value">
-                        {formatUSD(changeDueUSD)} ({formatKHR(changeDueUSD)})
-                      </strong>
+              {/* Smart Dual-Currency Cash Calculator */}
+              {(paymentMethod === 'cash_usd' || paymentMethod === 'cash_khr' || paymentMethod === 'cash_mixed') && (
+                <div className="cash-calculator-box">
+                  {/* Mode Selector Tabs */}
+                  <div className="cash-calc-header">
+                    <div className="cash-calc-title">
+                      <span>💵 គណនាប្រាក់ទទួល & ប្រាក់អាប់</span>
                     </div>
-                  )}
+
+                    <div className="cash-type-tabs">
+                      <button
+                        type="button"
+                        className={`cash-type-tab ${cashInputMode === 'usd' ? 'active' : ''}`}
+                        onClick={() => {
+                          setCashInputMode('usd');
+                          setPaymentMethod('cash_usd');
+                        }}
+                      >
+                        💵 ដុល្លារ ($)
+                      </button>
+                      <button
+                        type="button"
+                        className={`cash-type-tab ${cashInputMode === 'khr' ? 'active' : ''}`}
+                        onClick={() => {
+                          setCashInputMode('khr');
+                          setPaymentMethod('cash_khr');
+                        }}
+                      >
+                        🇰🇭 រៀល (៛)
+                      </button>
+                      <button
+                        type="button"
+                        className={`cash-type-tab ${cashInputMode === 'mixed' ? 'active' : ''}`}
+                        onClick={() => {
+                          setCashInputMode('mixed');
+                          setPaymentMethod('cash_mixed');
+                        }}
+                      >
+                        🔀 ចម្រុះ ($ + ៛)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Body & Inputs */}
+                  <div className="cash-calc-body">
+                    {/* Mode: USD Only */}
+                    {cashInputMode === 'usd' && (
+                      <div className="calc-input-section">
+                        <div className="calc-field">
+                          <label>ប្រាក់ដុល្លារទទួលបាន ($)៖</label>
+                          <div className="calc-input-wrapper">
+                            <span className="calc-symbol">$</span>
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              placeholder={totalUSD.toFixed(2)}
+                              value={receivedUSD}
+                              onChange={(e) => setReceivedUSD(e.target.value)}
+                              className="calc-main-input"
+                              autoFocus
+                            />
+                            {receivedUSD && (
+                              <button
+                                type="button"
+                                className="calc-clear-btn"
+                                onClick={() => setReceivedUSD('')}
+                                title="សម្អាត"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Quick USD Bill Buttons */}
+                        <div className="quick-bills-grid">
+                          <button
+                            type="button"
+                            className="quick-bill-btn exact-bill"
+                            onClick={() => setReceivedUSD(totalUSD.toFixed(2))}
+                          >
+                            ✓ គ្រប់ចំនួន (${totalUSD.toFixed(2)})
+                          </button>
+                          {[1, 5, 10, 20, 50, 100].map((bill) => (
+                            <button
+                              key={bill}
+                              type="button"
+                              className={`quick-bill-btn ${Number(receivedUSD) === bill ? 'active' : ''}`}
+                              onClick={() => setReceivedUSD(String(bill))}
+                            >
+                              ${bill}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mode: KHR Only */}
+                    {cashInputMode === 'khr' && (
+                      <div className="calc-input-section">
+                        <div className="calc-field">
+                          <label>ប្រាក់រៀលទទួលបាន (៛)៖</label>
+                          <div className="calc-input-wrapper">
+                            <input
+                              type="number"
+                              step="100"
+                              min="0"
+                              placeholder={totalKHR.toLocaleString()}
+                              value={receivedKHR}
+                              onChange={(e) => setReceivedKHR(e.target.value)}
+                              className="calc-main-input text-right"
+                              autoFocus
+                            />
+                            <span className="calc-symbol-suffix">៛</span>
+                            {receivedKHR && (
+                              <button
+                                type="button"
+                                className="calc-clear-btn"
+                                onClick={() => setReceivedKHR('')}
+                                title="សម្អាត"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Quick KHR Bill Buttons */}
+                        <div className="quick-bills-grid">
+                          <button
+                            type="button"
+                            className="quick-bill-btn exact-bill"
+                            onClick={() => setReceivedKHR(String(Math.round(totalKHR / 100) * 100))}
+                          >
+                            ✓ គ្រប់ចំនួន ({(Math.round(totalKHR / 100) * 100).toLocaleString()} ៛)
+                          </button>
+                          {[10000, 20000, 50000, 100000, 200000].map((bill) => (
+                            <button
+                              key={bill}
+                              type="button"
+                              className={`quick-bill-btn ${Number(receivedKHR) === bill ? 'active' : ''}`}
+                              onClick={() => setReceivedKHR(String(bill))}
+                            >
+                              {bill.toLocaleString()} ៛
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mode: Mixed USD + KHR */}
+                    {cashInputMode === 'mixed' && (
+                      <div className="calc-input-section mixed-section">
+                        <div className="mixed-inputs-row">
+                          <div className="calc-field">
+                            <label>💵 ទទួលជាដុល្លារ ($)៖</label>
+                            <div className="calc-input-wrapper">
+                              <span className="calc-symbol">$</span>
+                              <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                placeholder="0.00"
+                                value={receivedUSD}
+                                onChange={(e) => setReceivedUSD(e.target.value)}
+                                className="calc-main-input"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="calc-field">
+                            <label>🇰🇭 ទទួលជារៀល (៛)៖</label>
+                            <div className="calc-input-wrapper">
+                              <input
+                                type="number"
+                                step="100"
+                                min="0"
+                                placeholder="0"
+                                value={receivedKHR}
+                                onChange={(e) => setReceivedKHR(e.target.value)}
+                                className="calc-main-input text-right"
+                              />
+                              <span className="calc-symbol-suffix">៛</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mixed-summary-row">
+                          <span>
+                            សរុបប្រាក់ទទួលបាន៖{' '}
+                            <strong>${totalReceivedUSD.toFixed(2)} ({totalReceivedKHR.toLocaleString()} ៛)</strong>
+                          </span>
+                          {(receivedUSD || receivedKHR) && (
+                            <button
+                              type="button"
+                              className="calc-text-clear"
+                              onClick={() => {
+                                setReceivedUSD('');
+                                setReceivedKHR('');
+                              }}
+                            >
+                              សម្អាត
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Change Breakdown & Status Card */}
+                    {hasEnteredCash && (
+                      <div className={`change-display-card ${isInsufficient ? 'insufficient' : isExact ? 'exact' : 'surplus'}`}>
+                        {isInsufficient && (
+                          <div className="change-insufficient-box">
+                            <div className="change-status-title">⚠️ ប្រាក់ទទួលមិនទាន់គ្រប់ចំនួននៅឡើយ</div>
+                            <div className="change-deficit-details">
+                              <span>នៅខ្វះចំនួន៖ </span>
+                              <strong className="deficit-usd">${deficitUSD.toFixed(2)}</strong>
+                              <span className="deficit-khr">({deficitKHR.toLocaleString()} ៛)</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {isExact && (
+                          <div className="change-exact-box">
+                            <span className="change-exact-icon">✓</span>
+                            <div>
+                              <div className="change-exact-title">ទូទាត់គ្រប់ចំនួន</div>
+                              <small>គ្មានប្រាក់អាប់ដែលត្រូវប្រគល់ជូនទេ</small>
+                            </div>
+                          </div>
+                        )}
+
+                        {isChangeDue && (
+                          <div className="change-surplus-box">
+                            {/* If Client Paid in KHR Only -> Give back 100% in Khmer Riel */}
+                            {cashInputMode === 'khr' ? (
+                              <div className="khr-change-result">
+                                <span className="change-label">🇰🇭 ប្រាក់អាប់ជូនភ្ញៀវ (ជាប្រាក់រៀល)៖</span>
+                                <div className="khr-change-amount">
+                                  <strong>{totalChangeKHR.toLocaleString()} ៛</strong>
+                                  <small>≈ ${surplusUSD.toFixed(2)}</small>
+                                </div>
+                              </div>
+                            ) : (
+                              /* If Client Paid in USD or Mixed -> Give back in USD bills + KHR bills */
+                              <div className="dual-change-result">
+                                <span className="change-label">💵 ប្រាក់អាប់ជូនភ្ញៀវ (ដុល្លារ & រៀល)៖</span>
+                                <div className="dual-breakdown-row">
+                                  {dollarsBack > 0 && (
+                                    <div className="bill-chip dollar-chip">
+                                      <span className="bill-sub">ក្រដាសដុល្លារ</span>
+                                      <strong className="bill-main">${dollarsBack}.00</strong>
+                                    </div>
+                                  )}
+                                  {dollarsBack > 0 && rielRemainder > 0 && (
+                                    <span className="plus-sign">+</span>
+                                  )}
+                                  {rielRemainder > 0 && (
+                                    <div className="bill-chip riel-chip">
+                                      <span className="bill-sub">ក្រដាសប្រាក់រៀល</span>
+                                      <strong className="bill-main">{rielRemainder.toLocaleString()} ៛</strong>
+                                    </div>
+                                  )}
+                                  {dollarsBack === 0 && rielRemainder === 0 && (
+                                    <strong className="bill-main">គ្រប់ចំនួន</strong>
+                                  )}
+                                </div>
+
+                                {/* Alternative all in Riel note */}
+                                {dollarsBack > 0 && (
+                                  <div className="riel-alternative-hint">
+                                    ឬអាប់ជាប្រាក់រៀលទាំងអស់៖ <strong>{totalChangeKHR.toLocaleString()} ៛</strong>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -531,6 +867,83 @@ export default function Sell() {
         receipt={receiptModal}
         onClose={() => setReceiptModal(null)}
       />
+
+      {/* Quick Exchange Rate Edit Modal */}
+      {showRateModal && (
+        <div className="modal-backdrop" onClick={() => setShowRateModal(false)}>
+          <div className="modal-card rate-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>💱 កំណត់អត្រាប្តូរប្រាក់ (Exchange Rate)</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowRateModal(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="rate-modal-body">
+              <p className="rate-modal-desc">
+                អត្រាបច្ចុប្បន្ន៖ <strong>1$ = {exchangeRate.toLocaleString()} ៛</strong>
+                <br />
+                សូមបញ្ចូល ឬជ្រើសរើសអត្រាទីផ្សារថ្មីខាងក្រោម (ប្រព័ន្ធនឹងគណនាឡើងវិញដោយស្វ័យប្រវត្តិ)៖
+              </p>
+
+              <div className="rate-input-large-wrapper">
+                <span className="rate-lg-prefix">$1.00 =</span>
+                <input
+                  type="number"
+                  className="rate-lg-input"
+                  value={tempRate}
+                  step="10"
+                  min="1000"
+                  max="10000"
+                  onChange={(e) => setTempRate(e.target.value)}
+                  autoFocus
+                />
+                <span className="rate-lg-suffix">៛</span>
+              </div>
+
+              <div className="rate-modal-presets">
+                {[4000, 4100, 4120, 4150, 4200].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`preset-btn ${Number(tempRate) === preset ? 'active' : ''}`}
+                    onClick={() => setTempRate(String(preset))}
+                  >
+                    {preset.toLocaleString()} ៛
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setShowRateModal(false)}
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  const val = parseInt(tempRate, 10);
+                  if (val && val > 0) {
+                    updateExchangeRate(val);
+                    setShowRateModal(false);
+                  }
+                }}
+              >
+                {t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
