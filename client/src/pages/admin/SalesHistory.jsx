@@ -1,4 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import {
   adminCreateSale,
   adminDeleteSale,
@@ -113,6 +115,88 @@ export default function SalesHistory() {
 
   const grandTotalUSD = filteredSales.reduce((sum, sale) => sum + Number(sale.total), 0);
   const grandTipsUSD = filteredSales.reduce((sum, sale) => sum + Number(sale.tip || 0), 0);
+
+  // Checkbox Selection for Bulk / Custom Report
+  const [selectedSaleIds, setSelectedSaleIds] = useState(new Set());
+  const [exportingReportPdf, setExportingReportPdf] = useState(false);
+
+  // Clear selections when filter changes
+  useEffect(() => {
+    setSelectedSaleIds(new Set());
+  }, [fromDate, toDate, selectedBarber]);
+
+  const allFilteredSelected = filteredSales.length > 0 && filteredSales.every((s) => selectedSaleIds.has(s.id));
+  const someSelected = filteredSales.some((s) => selectedSaleIds.has(s.id));
+
+  function toggleSelectAll() {
+    if (allFilteredSelected) {
+      setSelectedSaleIds(new Set());
+    } else {
+      setSelectedSaleIds(new Set(filteredSales.map((s) => s.id)));
+    }
+  }
+
+  function toggleSelectSale(id) {
+    setSelectedSaleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  // Which sales to include in report: selected subset if any checked, otherwise all filtered sales
+  const salesToExport = useMemo(() => {
+    if (selectedSaleIds.size > 0) {
+      return filteredSales.filter((s) => selectedSaleIds.has(s.id));
+    }
+    return filteredSales;
+  }, [filteredSales, selectedSaleIds]);
+
+  const reportTotalUSD = salesToExport.reduce((sum, s) => sum + Number(s.total), 0);
+  const reportTipsUSD = salesToExport.reduce((sum, s) => sum + Number(s.tip || 0), 0);
+
+  function handlePrintReport() {
+    window.print();
+  }
+
+  async function handleExportReportPdf() {
+    const el = document.getElementById('printable-sales-report');
+    if (!el) {
+      window.print();
+      return;
+    }
+    setExportingReportPdf(true);
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      pdf.save(`sales-report-${dateStr}.pdf`);
+    } catch (err) {
+      alert('មានបញ្ហាក្នុងការទាញយក PDF៖ ' + err.message);
+    } finally {
+      setExportingReportPdf(false);
+    }
+  }
 
   async function handleDeleteSale() {
     if (!deletingSale) return;
@@ -394,24 +478,40 @@ export default function SalesHistory() {
           <p className="admin-subtitle">បញ្ជីវិក្កយបត្រកាត់សក់ និងចំណូលលម្អិត</p>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={openCreateModal}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            fontWeight: 600,
-            padding: '0.65rem 1.25rem',
-            fontSize: '0.95rem',
-            whiteSpace: 'nowrap',
-            boxShadow: '0 4px 12px rgba(212, 160, 23, 0.25)',
-          }}
-        >
-          <span>+</span>
-          <span>បញ្ចូលវិក្កយបត្រថ្មី</span>
-        </button>
+        <div className="admin-header-actions">
+          {/* Batch Print / PDF Report Button */}
+          <button
+            type="button"
+            className="btn btn-secondary btn-export-report"
+            onClick={handleExportReportPdf}
+            disabled={filteredSales.length === 0 || exportingReportPdf}
+            title="បោះពុម្ព ឬទាញយករបាយការណ៍បញ្ជីវិក្កយបត្រជា PDF (A4)"
+          >
+            <span>{exportingReportPdf ? '⏳ កំពុងដំណើរការ...' : '📄 បោះពុម្ពរបាយការណ៍ (PDF)'}</span>
+            {selectedSaleIds.size > 0 && (
+              <span className="badge-selected-count">{selectedSaleIds.size}</span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={openCreateModal}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              fontWeight: 600,
+              padding: '0.65rem 1.25rem',
+              fontSize: '0.95rem',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 12px rgba(212, 160, 23, 0.25)',
+            }}
+          >
+            <span>+</span>
+            <span>បញ្ចូលវិក្កយបត្រថ្មី</span>
+          </button>
+        </div>
       </div>
 
       {error && <div className="banner banner-error">{error}</div>}
@@ -475,6 +575,18 @@ export default function SalesHistory() {
           <table className="admin-table">
             <thead>
               <tr>
+                <th style={{ width: '40px', textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    className="sales-checkbox"
+                    checked={allFilteredSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected && !allFilteredSelected;
+                    }}
+                    onChange={toggleSelectAll}
+                    title="ជ្រើសរើសទាំងអស់"
+                  />
+                </th>
                 <th>{t.receiptNumber}</th>
                 <th>{t.date}</th>
                 <th>{t.customerName}</th>
@@ -483,12 +595,20 @@ export default function SalesHistory() {
                 <th>{t.paymentMethod}</th>
                 <th>{t.tip}</th>
                 <th>{t.total}</th>
-                <th style={{ textAlign: 'center', width: '80px' }}>សកម្មភាព</th>
+                <th style={{ textAlign: 'center', width: '60px' }}>សកម្មភាព</th>
               </tr>
             </thead>
             <tbody>
               {filteredSales.map((sale) => (
-                <tr key={sale.id}>
+                <tr key={sale.id} className={selectedSaleIds.has(sale.id) ? 'row-selected' : ''}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      className="sales-checkbox"
+                      checked={selectedSaleIds.has(sale.id)}
+                      onChange={() => toggleSelectSale(sale.id)}
+                    />
+                  </td>
                   <td>
                     <strong>#{sale.id}</strong>
                   </td>
@@ -536,64 +656,53 @@ export default function SalesHistory() {
                     <div className="table-khr">{formatKHR(sale.total)}</div>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <div className="table-actions-inline">
+                    <div className="table-action-menu-wrap" ref={activeMenuId === sale.id ? menuRef : null}>
                       <button
                         type="button"
-                        className="btn-action-print"
-                        onClick={() => setReceiptModal(sale)}
-                        title="បោះពុម្ព ឬទាញយកវិក្កយបត្រ (Print / PDF)"
+                        className={`btn-action-more ${activeMenuId === sale.id ? 'active' : ''}`}
+                        onClick={() => setActiveMenuId(activeMenuId === sale.id ? null : sale.id)}
+                        title="ជម្រើសសកម្មភាព"
+                        aria-label="សកម្មភាព"
                       >
-                        🖨️ បោះពុម្ព
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                          <circle cx="12" cy="5" r="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <circle cx="12" cy="19" r="2" />
+                        </svg>
                       </button>
 
-                      <div className="table-action-menu-wrap" ref={activeMenuId === sale.id ? menuRef : null}>
-                        <button
-                          type="button"
-                          className={`btn-action-more ${activeMenuId === sale.id ? 'active' : ''}`}
-                          onClick={() => setActiveMenuId(activeMenuId === sale.id ? null : sale.id)}
-                          title="ជម្រើសសកម្មភាពបន្ថែម"
-                          aria-label="សកម្មភាព"
-                        >
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                            <circle cx="12" cy="5" r="2" />
-                            <circle cx="12" cy="12" r="2" />
-                            <circle cx="12" cy="19" r="2" />
-                          </svg>
-                        </button>
-
-                        {activeMenuId === sale.id && (
-                          <div className="table-dropdown-menu" role="menu">
-                            <button
-                              type="button"
-                              className="table-dropdown-item"
-                              onClick={() => {
-                                setActiveMenuId(null);
-                                setReceiptModal(sale);
-                              }}
-                            >
-                              <span>🧾 {t.viewReceipt}</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="table-dropdown-item"
-                              onClick={() => openEditModal(sale)}
-                            >
-                              <span>✏️ កែសម្រួលវិក្កយបត្រ</span>
-                            </button>
-                            <div className="dropdown-divider" style={{ margin: '0.25rem 0' }} />
-                            <button
-                              type="button"
-                              className="table-dropdown-item item-danger"
-                              onClick={() => {
-                                setActiveMenuId(null);
-                                setDeletingSale(sale);
-                              }}
-                            >
-                              <span>🗑️ {t.delete}</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      {activeMenuId === sale.id && (
+                        <div className="table-dropdown-menu" role="menu">
+                          <button
+                            type="button"
+                            className="table-dropdown-item"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              setReceiptModal(sale);
+                            }}
+                          >
+                            <span>🧾 {t.viewReceipt}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="table-dropdown-item"
+                            onClick={() => openEditModal(sale)}
+                          >
+                            <span>✏️ កែសម្រួលវិក្កយបត្រ</span>
+                          </button>
+                          <div className="dropdown-divider" style={{ margin: '0.25rem 0' }} />
+                          <button
+                            type="button"
+                            className="table-dropdown-item item-danger"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              setDeletingSale(sale);
+                            }}
+                          >
+                            <span>🗑️ {t.delete}</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -603,7 +712,26 @@ export default function SalesHistory() {
         </div>
 
         {/* Total revenue summary at the bottom */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
+          <div className="report-action-hint">
+            {selectedSaleIds.size > 0 ? (
+              <span>
+                បានជ្រើសរើស <strong>{selectedSaleIds.size}</strong> វិក្កយបត្រ សម្រាប់បោះពុម្ព |{' '}
+                <button
+                  type="button"
+                  className="link-clear-selection"
+                  onClick={() => setSelectedSaleIds(new Set())}
+                >
+                  សម្អាតការជ្រើសរើស
+                </button>
+              </span>
+            ) : (
+              <span className="text-muted">
+                💡 គូសធីកលើប្រអប់ដើម្បីជ្រើសរើសវិក្កយបត្រជាក់លាក់ ឬចុច <strong>«📄 បោះពុម្ពរបាយការណ៍ (PDF)»</strong> ដើម្បីព្រីនទាំងអស់ដែលបានតម្រង។
+              </span>
+            )}
+          </div>
+
           <div className="history-summary-box">
             <div className="summary-item">
               <span>{t.total}៖</span>
@@ -618,6 +746,65 @@ export default function SalesHistory() {
         </div>
         </>
       )}
+
+      {/* Hidden Printable Report for PDF / Print (A4 Format) */}
+      <div id="printable-sales-report" className="printable-report-wrapper" style={{ display: 'none' }}>
+        <div className="report-print-header">
+          <h2>{t.appName}</h2>
+          <h3>របាយការណ៍បញ្ជីវិក្កយបត្រ & ចំណូល (Sales Summary Report)</h3>
+          <p className="report-meta">
+            កាលបរិច្ឆេទបង្កើត៖ {new Date().toLocaleString()} | ចំនួនវិក្កយបត្រ៖ {salesToExport.length}
+            {fromDate && ` | ចាប់ពី៖ ${fromDate}`}
+            {toDate && ` | ដល់៖ ${toDate}`}
+            {selectedBarber && ` | ជាង៖ ${barbers.find((b) => String(b.id) === selectedBarber)?.name || ''}`}
+          </p>
+        </div>
+
+        <table className="report-print-table">
+          <thead>
+            <tr>
+              <th>លេខវិក្កយបត្រ</th>
+              <th>កាលបរិច្ឆេទ</th>
+              <th>ឈ្មោះភ្ញៀវ</th>
+              <th>ជាងកាត់សក់</th>
+              <th>សេវាកម្ម & ផលិតផល</th>
+              <th>វិធីទូទាត់</th>
+              <th>ធីប ($)</th>
+              <th>សរុប ($)</th>
+              <th>សរុប (៛)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {salesToExport.map((sale) => (
+              <tr key={sale.id}>
+                <td>#{sale.id}</td>
+                <td>{new Date(sale.created_at).toLocaleDateString()} {new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                <td>{sale.customer_name}</td>
+                <td>{sale.barbers?.name || '—'}</td>
+                <td>
+                  {sale.sale_items?.map((it) => `${it.product_name} x${it.quantity}`).join(', ')}
+                </td>
+                <td>{paymentLabels[sale.payment_method] || sale.payment_method}</td>
+                <td>{Number(sale.tip) > 0 ? formatUSD(sale.tip) : '—'}</td>
+                <td><strong>{formatUSD(sale.total)}</strong></td>
+                <td>{formatKHR(sale.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="report-total-row">
+              <td colSpan="6" style={{ textAlign: 'right', fontWeight: 'bold' }}>សរុបរួម (Grand Total)៖</td>
+              <td style={{ fontWeight: 'bold', color: '#10b981' }}>{formatUSD(reportTipsUSD)}</td>
+              <td style={{ fontWeight: 'bold' }}>{formatUSD(reportTotalUSD)}</td>
+              <td style={{ fontWeight: 'bold' }}>{formatKHR(reportTotalUSD)}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div className="report-print-footer">
+          <p>ហាងកាត់សក់ & សាឡន | របាយការណ៍ផ្លូវការចេញពីប្រព័ន្ធ POS</p>
+        </div>
+      </div>
 
       {/* Printable Receipt Modal with Image & PDF Export */}
       <ReceiptModal
