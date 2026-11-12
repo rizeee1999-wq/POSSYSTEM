@@ -536,53 +536,64 @@ export default function SalesHistory() {
                     <div className="table-khr">{formatKHR(sale.total)}</div>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <div className="table-action-menu-wrap" ref={activeMenuId === sale.id ? menuRef : null}>
+                    <div className="table-actions-inline">
                       <button
                         type="button"
-                        className={`btn-action-more ${activeMenuId === sale.id ? 'active' : ''}`}
-                        onClick={() => setActiveMenuId(activeMenuId === sale.id ? null : sale.id)}
-                        title="ជម្រើសសកម្មភាព"
-                        aria-label="សកម្មភាព"
+                        className="btn-action-print"
+                        onClick={() => setReceiptModal(sale)}
+                        title="បោះពុម្ព ឬទាញយកវិក្កយបត្រ (Print / PDF)"
                       >
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                          <circle cx="12" cy="5" r="2" />
-                          <circle cx="12" cy="12" r="2" />
-                          <circle cx="12" cy="19" r="2" />
-                        </svg>
+                        🖨️ បោះពុម្ព
                       </button>
 
-                      {activeMenuId === sale.id && (
-                        <div className="table-dropdown-menu" role="menu">
-                          <button
-                            type="button"
-                            className="table-dropdown-item"
-                            onClick={() => {
-                              setActiveMenuId(null);
-                              setReceiptModal(sale);
-                            }}
-                          >
-                            <span>🧾 {t.viewReceipt}</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="table-dropdown-item"
-                            onClick={() => openEditModal(sale)}
-                          >
-                            <span>✏️ កែសម្រួលវិក្កយបត្រ</span>
-                          </button>
-                          <div className="dropdown-divider" style={{ margin: '0.25rem 0' }} />
-                          <button
-                            type="button"
-                            className="table-dropdown-item item-danger"
-                            onClick={() => {
-                              setActiveMenuId(null);
-                              setDeletingSale(sale);
-                            }}
-                          >
-                            <span>🗑️ {t.delete}</span>
-                          </button>
-                        </div>
-                      )}
+                      <div className="table-action-menu-wrap" ref={activeMenuId === sale.id ? menuRef : null}>
+                        <button
+                          type="button"
+                          className={`btn-action-more ${activeMenuId === sale.id ? 'active' : ''}`}
+                          onClick={() => setActiveMenuId(activeMenuId === sale.id ? null : sale.id)}
+                          title="ជម្រើសសកម្មភាពបន្ថែម"
+                          aria-label="សកម្មភាព"
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <circle cx="12" cy="5" r="2" />
+                            <circle cx="12" cy="12" r="2" />
+                            <circle cx="12" cy="19" r="2" />
+                          </svg>
+                        </button>
+
+                        {activeMenuId === sale.id && (
+                          <div className="table-dropdown-menu" role="menu">
+                            <button
+                              type="button"
+                              className="table-dropdown-item"
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                setReceiptModal(sale);
+                              }}
+                            >
+                              <span>🧾 {t.viewReceipt}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="table-dropdown-item"
+                              onClick={() => openEditModal(sale)}
+                            >
+                              <span>✏️ កែសម្រួលវិក្កយបត្រ</span>
+                            </button>
+                            <div className="dropdown-divider" style={{ margin: '0.25rem 0' }} />
+                            <button
+                              type="button"
+                              className="table-dropdown-item item-danger"
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                setDeletingSale(sale);
+                              }}
+                            >
+                              <span>🗑️ {t.delete}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>
