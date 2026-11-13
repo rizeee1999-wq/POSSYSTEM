@@ -209,17 +209,9 @@ export default function AdminNav() {
           <SellIcon />
           {t.navSell}
         </NavLink>
-        <NavLink to="/admin/queue">
-          <QueueIcon />
-          {t.navQueue}
-        </NavLink>
         <NavLink to="/admin/products">
           <ProductsIcon />
           {t.navProducts}
-        </NavLink>
-        <NavLink to="/admin/barbers">
-          <BarbersIcon />
-          {t.navBarbers}
         </NavLink>
         <NavLink to="/admin/sales">
           <HistoryIcon />
