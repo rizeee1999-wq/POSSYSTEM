@@ -115,6 +115,19 @@ export default function SalesHistory() {
     });
   }, [sales, fromDate, toDate, selectedBarber]);
 
+  // Pagination: 10 items per page
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredSales.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedSales = useMemo(() => {
+    return filteredSales.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredSales, currentPage, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [fromDate, toDate, selectedBarber]);
+
   const grandTotalUSD = filteredSales.reduce((sum, sale) => sum + Number(sale.total), 0);
   const grandTipsUSD = filteredSales.reduce((sum, sale) => sum + Number(sale.tip || 0), 0);
 
@@ -677,7 +690,7 @@ export default function SalesHistory() {
               </tr>
             </thead>
             <tbody>
-              {filteredSales.map((sale) => (
+              {pagedSales.map((sale) => (
                 <tr key={sale.id}>
                   <td>
                     <strong>#{sale.id}</strong>
@@ -780,6 +793,31 @@ export default function SalesHistory() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination controls (10 sales per page) */}
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              ← {t.previousPage}
+            </button>
+            <span className="pagination-info">
+              ទំព័រ {currentPage} នៃ {totalPages} ({filteredSales.length} វិក្កយបត្រ)
+            </span>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              {t.nextPage} →
+            </button>
+          </div>
+        )}
 
         {/* Total revenue summary at the bottom */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
