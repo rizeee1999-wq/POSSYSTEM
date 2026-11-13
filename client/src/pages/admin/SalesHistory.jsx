@@ -118,8 +118,129 @@ export default function SalesHistory() {
   const grandTotalUSD = filteredSales.reduce((sum, sale) => sum + Number(sale.total), 0);
   const grandTipsUSD = filteredSales.reduce((sum, sale) => sum + Number(sale.tip || 0), 0);
 
+  // Export state & dropdown
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportingType, setExportingType] = useState(''); // 'pdf' | 'png'
+  const exportDropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutsideExport(e) {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target)) {
+        setExportOpen(false);
+      }
+    }
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutsideExport);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideExport);
+    };
+  }, [exportOpen]);
+
   function handlePrintReport() {
+    setExportOpen(false);
     window.print();
+  }
+
+  async function handleExportReportPdf() {
+    setExportOpen(false);
+    const el = document.getElementById('printable-sales-report');
+    if (!el) {
+      window.print();
+      return;
+    }
+    setExportingType('pdf');
+    try {
+      // Temporarily reveal element off-screen for crisp rendering
+      el.style.display = 'block';
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
+      el.style.top = '0';
+      el.style.width = '1000px';
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      el.style.display = 'none';
+      el.style.position = '';
+      el.style.left = '';
+      el.style.top = '';
+      el.style.width = '';
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      pdf.save(`sales-report-${dateStr}.pdf`);
+    } catch (err) {
+      alert('មានបញ្ហាក្នុងការទាញយក PDF៖ ' + err.message);
+    } finally {
+      setExportingType('');
+      if (el) {
+        el.style.display = 'none';
+        el.style.position = '';
+        el.style.left = '';
+        el.style.top = '';
+        el.style.width = '';
+      }
+    }
+  }
+
+  async function handleExportReportPng() {
+    setExportOpen(false);
+    const el = document.getElementById('printable-sales-report');
+    if (!el) return;
+
+    setExportingType('png');
+    try {
+      el.style.display = 'block';
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
+      el.style.top = '0';
+      el.style.width = '1000px';
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      el.style.display = 'none';
+      el.style.position = '';
+      el.style.left = '';
+      el.style.top = '';
+      el.style.width = '';
+
+      const link = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.download = `sales-report-${dateStr}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      alert('មានបញ្ហាក្នុងការទាញយករូបភាព PNG៖ ' + err.message);
+    } finally {
+      setExportingType('');
+      if (el) {
+        el.style.display = 'none';
+        el.style.position = '';
+        el.style.left = '';
+        el.style.top = '';
+        el.style.width = '';
+      }
+    }
   }
 
   async function handleDeleteSale() {
@@ -403,16 +524,64 @@ export default function SalesHistory() {
         </div>
 
         <div className="admin-header-actions">
-          {/* Print / PDF Export Report Button for all currently filtered / sorted sales */}
-          <button
-            type="button"
-            className="btn btn-secondary btn-export-report"
-            onClick={handlePrintReport}
-            disabled={filteredSales.length === 0}
-            title="បោះពុម្ព ឬទាញយករបាយការណ៍បញ្ជីវិក្កយបត្រ (PDF/Print)"
-          >
-            <span>🖨️ បោះពុម្ពរបាយការណ៍ ({filteredSales.length})</span>
-          </button>
+          {/* Export Dropdown (Print, PDF, PNG) for all filtered / sorted sales */}
+          <div className="export-report-dropdown-wrap" ref={exportDropdownRef}>
+            <button
+              type="button"
+              className={`btn btn-secondary btn-export-report ${exportOpen ? 'active' : ''}`}
+              onClick={() => setExportOpen((prev) => !prev)}
+              disabled={filteredSales.length === 0 || Boolean(exportingType)}
+              title="បោះពុម្ព ឬទាញយករបាយការណ៍ (Print / PDF / PNG)"
+            >
+              <span>
+                {exportingType === 'pdf'
+                  ? '⏳ កំពុងទាញយក PDF...'
+                  : exportingType === 'png'
+                  ? '⏳ កំពុងទាញយករូបភាព...'
+                  : `📊 របាយការណ៍ (${filteredSales.length}) ▾`}
+              </span>
+            </button>
+
+            {exportOpen && (
+              <div className="export-dropdown-menu" role="menu">
+                <button
+                  type="button"
+                  className="export-dropdown-item"
+                  onClick={handlePrintReport}
+                >
+                  <span className="export-item-icon">🖨️</span>
+                  <div className="export-item-text">
+                    <strong>បោះពុម្ពរបាយការណ៍ (Print)</strong>
+                    <small>បញ្ជូនទៅម៉ាស៊ីនព្រីន ឬ Browser PDF</small>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="export-dropdown-item"
+                  onClick={handleExportReportPdf}
+                >
+                  <span className="export-item-icon">📄</span>
+                  <div className="export-item-text">
+                    <strong>ទាញយកជាឯកសារ PDF</strong>
+                    <small>Save ជារបាយការណ៍ A4 PDF ពេញលេញ</small>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="export-dropdown-item"
+                  onClick={handleExportReportPng}
+                >
+                  <span className="export-item-icon">📸</span>
+                  <div className="export-item-text">
+                    <strong>ទាញយកជារូបភាព (PNG)</strong>
+                    <small>សម្រាប់ផ្ញើតាម Telegram / Messenger</small>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
