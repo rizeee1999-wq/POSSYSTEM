@@ -2175,46 +2175,9 @@ table.data-table tbody tr:hover {
   cursor: not-allowed;
 }
 
-.badge-selected-count {
-  background: var(--salon-gold-bright);
-  color: #0b0f19;
-  font-size: 0.75rem;
-  font-weight: 900;
-  padding: 0.15rem 0.45rem;
-  border-radius: 20px;
-  line-height: 1;
-}
-
-.sales-checkbox {
-  width: 17px;
-  height: 17px;
-  cursor: pointer;
-  accent-color: var(--salon-gold-bright);
-}
-
-.admin-table tr.row-selected {
-  background: rgba(245, 158, 11, 0.08) !important;
-}
-
-.report-action-hint {
-  font-size: 0.86rem;
-  color: var(--muted);
-}
-
-.link-clear-selection {
-  background: none;
-  border: none;
-  color: var(--danger);
-  font-size: 0.84rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-  margin-left: 0.35rem;
-}
-
 /* Printable A4 Report Styling */
 .printable-report-wrapper {
+  display: none;
   background: #ffffff;
   color: #1e293b;
   padding: 2.5rem;
@@ -3719,15 +3682,19 @@ table.data-table tbody tr:hover {
     visibility: hidden;
   }
   .receipt-paper,
-  .receipt-paper * {
+  .receipt-paper *,
+  .printable-report-wrapper,
+  .printable-report-wrapper * {
     visibility: visible;
   }
-  .receipt-paper {
+  .receipt-paper,
+  .printable-report-wrapper {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     border: none;
+    display: block !important;
   }
   .no-print {
     display: none !important;

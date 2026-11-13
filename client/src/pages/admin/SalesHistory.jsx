@@ -105,97 +105,21 @@ export default function SalesHistory() {
     loadData();
   }, []);
 
-  const filteredSales = sales.filter((sale) => {
-    const saleDate = sale.created_at.slice(0, 10);
-    if (fromDate && saleDate < fromDate) return false;
-    if (toDate && saleDate > toDate) return false;
-    if (selectedBarber && String(sale.barber_id) !== selectedBarber) return false;
-    return true;
-  });
+  const filteredSales = useMemo(() => {
+    return sales.filter((sale) => {
+      const saleDate = sale.created_at.slice(0, 10);
+      if (fromDate && saleDate < fromDate) return false;
+      if (toDate && saleDate > toDate) return false;
+      if (selectedBarber && String(sale.barber_id) !== selectedBarber) return false;
+      return true;
+    });
+  }, [sales, fromDate, toDate, selectedBarber]);
 
   const grandTotalUSD = filteredSales.reduce((sum, sale) => sum + Number(sale.total), 0);
   const grandTipsUSD = filteredSales.reduce((sum, sale) => sum + Number(sale.tip || 0), 0);
 
-  // Checkbox Selection for Bulk / Custom Report
-  const [selectedSaleIds, setSelectedSaleIds] = useState(new Set());
-  const [exportingReportPdf, setExportingReportPdf] = useState(false);
-
-  // Clear selections when filter changes
-  useEffect(() => {
-    setSelectedSaleIds(new Set());
-  }, [fromDate, toDate, selectedBarber]);
-
-  const allFilteredSelected = filteredSales.length > 0 && filteredSales.every((s) => selectedSaleIds.has(s.id));
-  const someSelected = filteredSales.some((s) => selectedSaleIds.has(s.id));
-
-  function toggleSelectAll() {
-    if (allFilteredSelected) {
-      setSelectedSaleIds(new Set());
-    } else {
-      setSelectedSaleIds(new Set(filteredSales.map((s) => s.id)));
-    }
-  }
-
-  function toggleSelectSale(id) {
-    setSelectedSaleIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
-
-  // Which sales to include in report: selected subset if any checked, otherwise all filtered sales
-  const salesToExport = useMemo(() => {
-    if (selectedSaleIds.size > 0) {
-      return filteredSales.filter((s) => selectedSaleIds.has(s.id));
-    }
-    return filteredSales;
-  }, [filteredSales, selectedSaleIds]);
-
-  const reportTotalUSD = salesToExport.reduce((sum, s) => sum + Number(s.total), 0);
-  const reportTipsUSD = salesToExport.reduce((sum, s) => sum + Number(s.tip || 0), 0);
-
   function handlePrintReport() {
     window.print();
-  }
-
-  async function handleExportReportPdf() {
-    const el = document.getElementById('printable-sales-report');
-    if (!el) {
-      window.print();
-      return;
-    }
-    setExportingReportPdf(true);
-    try {
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const pdfWidth = 210;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      const dateStr = new Date().toISOString().slice(0, 10);
-      pdf.save(`sales-report-${dateStr}.pdf`);
-    } catch (err) {
-      alert('មានបញ្ហាក្នុងការទាញយក PDF៖ ' + err.message);
-    } finally {
-      setExportingReportPdf(false);
-    }
   }
 
   async function handleDeleteSale() {
@@ -479,18 +403,15 @@ export default function SalesHistory() {
         </div>
 
         <div className="admin-header-actions">
-          {/* Batch Print / PDF Report Button */}
+          {/* Print / PDF Export Report Button for all currently filtered / sorted sales */}
           <button
             type="button"
             className="btn btn-secondary btn-export-report"
-            onClick={handleExportReportPdf}
-            disabled={filteredSales.length === 0 || exportingReportPdf}
-            title="បោះពុម្ព ឬទាញយករបាយការណ៍បញ្ជីវិក្កយបត្រជា PDF (A4)"
+            onClick={handlePrintReport}
+            disabled={filteredSales.length === 0}
+            title="បោះពុម្ព ឬទាញយករបាយការណ៍បញ្ជីវិក្កយបត្រ (PDF/Print)"
           >
-            <span>{exportingReportPdf ? '⏳ កំពុងដំណើរការ...' : '📄 បោះពុម្ពរបាយការណ៍ (PDF)'}</span>
-            {selectedSaleIds.size > 0 && (
-              <span className="badge-selected-count">{selectedSaleIds.size}</span>
-            )}
+            <span>🖨️ បោះពុម្ពរបាយការណ៍ ({filteredSales.length})</span>
           </button>
 
           <button
@@ -575,18 +496,6 @@ export default function SalesHistory() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th style={{ width: '40px', textAlign: 'center' }}>
-                  <input
-                    type="checkbox"
-                    className="sales-checkbox"
-                    checked={allFilteredSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someSelected && !allFilteredSelected;
-                    }}
-                    onChange={toggleSelectAll}
-                    title="ជ្រើសរើសទាំងអស់"
-                  />
-                </th>
                 <th>{t.receiptNumber}</th>
                 <th>{t.date}</th>
                 <th>{t.customerName}</th>
@@ -600,15 +509,7 @@ export default function SalesHistory() {
             </thead>
             <tbody>
               {filteredSales.map((sale) => (
-                <tr key={sale.id} className={selectedSaleIds.has(sale.id) ? 'row-selected' : ''}>
-                  <td style={{ textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      className="sales-checkbox"
-                      checked={selectedSaleIds.has(sale.id)}
-                      onChange={() => toggleSelectSale(sale.id)}
-                    />
-                  </td>
+                <tr key={sale.id}>
                   <td>
                     <strong>#{sale.id}</strong>
                   </td>
@@ -712,26 +613,7 @@ export default function SalesHistory() {
         </div>
 
         {/* Total revenue summary at the bottom */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
-          <div className="report-action-hint">
-            {selectedSaleIds.size > 0 ? (
-              <span>
-                បានជ្រើសរើស <strong>{selectedSaleIds.size}</strong> វិក្កយបត្រ សម្រាប់បោះពុម្ព |{' '}
-                <button
-                  type="button"
-                  className="link-clear-selection"
-                  onClick={() => setSelectedSaleIds(new Set())}
-                >
-                  សម្អាតការជ្រើសរើស
-                </button>
-              </span>
-            ) : (
-              <span className="text-muted">
-                💡 គូសធីកលើប្រអប់ដើម្បីជ្រើសរើសវិក្កយបត្រជាក់លាក់ ឬចុច <strong>«📄 បោះពុម្ពរបាយការណ៍ (PDF)»</strong> ដើម្បីព្រីនទាំងអស់ដែលបានតម្រង។
-              </span>
-            )}
-          </div>
-
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1.25rem', gap: '1rem', flexWrap: 'wrap' }}>
           <div className="history-summary-box">
             <div className="summary-item">
               <span>{t.total}៖</span>
@@ -747,13 +629,13 @@ export default function SalesHistory() {
         </>
       )}
 
-      {/* Hidden Printable Report for PDF / Print (A4 Format) */}
-      <div id="printable-sales-report" className="printable-report-wrapper" style={{ display: 'none' }}>
+      {/* Printable Report for PDF / Print (A4 Format) */}
+      <div id="printable-sales-report" className="printable-report-wrapper">
         <div className="report-print-header">
           <h2>{t.appName}</h2>
           <h3>របាយការណ៍បញ្ជីវិក្កយបត្រ & ចំណូល (Sales Summary Report)</h3>
           <p className="report-meta">
-            កាលបរិច្ឆេទបង្កើត៖ {new Date().toLocaleString()} | ចំនួនវិក្កយបត្រ៖ {salesToExport.length}
+            កាលបរិច្ឆេទបង្កើត៖ {new Date().toLocaleString()} | ចំនួនវិក្កយបត្រ៖ {filteredSales.length}
             {fromDate && ` | ចាប់ពី៖ ${fromDate}`}
             {toDate && ` | ដល់៖ ${toDate}`}
             {selectedBarber && ` | ជាង៖ ${barbers.find((b) => String(b.id) === selectedBarber)?.name || ''}`}
@@ -775,7 +657,7 @@ export default function SalesHistory() {
             </tr>
           </thead>
           <tbody>
-            {salesToExport.map((sale) => (
+            {filteredSales.map((sale) => (
               <tr key={sale.id}>
                 <td>#{sale.id}</td>
                 <td>{new Date(sale.created_at).toLocaleDateString()} {new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
@@ -794,9 +676,9 @@ export default function SalesHistory() {
           <tfoot>
             <tr className="report-total-row">
               <td colSpan="6" style={{ textAlign: 'right', fontWeight: 'bold' }}>សរុបរួម (Grand Total)៖</td>
-              <td style={{ fontWeight: 'bold', color: '#10b981' }}>{formatUSD(reportTipsUSD)}</td>
-              <td style={{ fontWeight: 'bold' }}>{formatUSD(reportTotalUSD)}</td>
-              <td style={{ fontWeight: 'bold' }}>{formatKHR(reportTotalUSD)}</td>
+              <td style={{ fontWeight: 'bold', color: '#10b981' }}>{formatUSD(grandTipsUSD)}</td>
+              <td style={{ fontWeight: 'bold' }}>{formatUSD(grandTotalUSD)}</td>
+              <td style={{ fontWeight: 'bold' }}>{formatKHR(grandTotalUSD)}</td>
             </tr>
           </tfoot>
         </table>

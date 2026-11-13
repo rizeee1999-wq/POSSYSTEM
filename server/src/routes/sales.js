@@ -214,15 +214,56 @@ router.put('/admin/sales/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// DELETE /api/admin/sales/:id — delete sale record
+// DELETE /api/admin/sales/:id — delete sale record and restore product inventory
 router.delete('/admin/sales/:id', requireAdmin, async (req, res) => {
-  const { error } = await req.supabase
-    .from('sales')
-    .delete()
-    .eq('id', req.params.id);
+  const saleId = req.params.id;
 
-  if (error) return res.status(400).json({ error: error.message });
-  res.status(204).end();
+  try {
+    // 1. Fetch sale items to see if any physical retail products were sold
+    const { data: items, error: itemsError } = await req.supabase
+      .from('sale_items')
+      .select('product_id, quantity, item_type')
+      .eq('sale_id', saleId);
+
+    if (itemsError) {
+      return res.status(400).json({ error: itemsError.message });
+    }
+
+    // 2. For each physical product item, restore the stock count back
+    if (Array.isArray(items) && items.length > 0) {
+      for (const item of items) {
+        if (item.product_id && (item.item_type === 'product' || !item.item_type)) {
+          // Check product type in products table
+          const { data: prod } = await req.supabase
+            .from('products')
+            .select('id, item_type, stock')
+            .eq('id', item.product_id)
+            .single();
+
+          if (prod && prod.item_type === 'product') {
+            await req.supabase
+              .from('products')
+              .update({ stock: Number(prod.stock || 0) + Number(item.quantity || 0) })
+              .eq('id', prod.id);
+          }
+        }
+      }
+    }
+
+    // 3. Delete sale record (sale_items will be deleted via ON DELETE CASCADE or explicit)
+    const { error: deleteError } = await req.supabase
+      .from('sales')
+      .delete()
+      .eq('id', saleId);
+
+    if (deleteError) {
+      return res.status(400).json({ error: deleteError.message });
+    }
+
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to delete sale' });
+  }
 });
 
 export default router;
