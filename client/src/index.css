@@ -5248,6 +5248,93 @@ table.data-table tbody tr:hover {
   border-radius: 9px;
 }
 
+.cash-type-tabs.unified-tabs {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 680px) {
+  .cash-type-tabs.unified-tabs {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 440px) {
+  .cash-type-tabs.unified-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.digital-payment-body {
+  padding: 1rem 0.85rem;
+}
+
+.digital-payment-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+}
+
+.khqr-card {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.card-pay-card {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.digital-card-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.digital-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.digital-card-info strong {
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.digital-card-info p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.digital-card-info strong {
+  color: var(--salon-gold-bright);
+}
+
+.badge-khqr-ready {
+  background: #10b981;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.35rem 0.65rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.badge-card-ready {
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.35rem 0.65rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
 .cash-type-tab {
   background: transparent;
   border: none;

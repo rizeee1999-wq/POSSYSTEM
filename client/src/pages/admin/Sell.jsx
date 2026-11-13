@@ -493,101 +493,64 @@ export default function Sell() {
                 </div>
               </div>
 
-              {/* Payment Method selector */}
-              <div className="payment-method-section">
-                <label>💳 {t.paymentMethod}</label>
-                <div className="payment-grid">
-                  <button
-                    type="button"
-                    className={`payment-btn ${paymentMethod === 'cash_usd' ? 'active' : ''}`}
-                    onClick={() => {
-                      setPaymentMethod('cash_usd');
-                      setCashInputMode('usd');
-                    }}
-                  >
-                    💵 {t.cashUsd}
-                  </button>
-                  <button
-                    type="button"
-                    className={`payment-btn ${paymentMethod === 'cash_khr' ? 'active' : ''}`}
-                    onClick={() => {
-                      setPaymentMethod('cash_khr');
-                      setCashInputMode('khr');
-                    }}
-                  >
-                    🇰🇭 {t.cashKhr}
-                  </button>
-                  <button
-                    type="button"
-                    className={`payment-btn ${paymentMethod === 'cash_mixed' ? 'active' : ''}`}
-                    onClick={() => {
-                      setPaymentMethod('cash_mixed');
-                      setCashInputMode('mixed');
-                    }}
-                  >
-                    {t.cashMixed}
-                  </button>
-                  <button
-                    type="button"
-                    className={`payment-btn ${paymentMethod === 'aba_khqr' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('aba_khqr')}
-                  >
-                    {t.abaKhqr}
-                  </button>
-                  <button
-                    type="button"
-                    className={`payment-btn ${paymentMethod === 'card' ? 'active' : ''}`}
-                    onClick={() => setPaymentMethod('card')}
-                  >
-                    {t.card}
-                  </button>
-                </div>
-              </div>
-
-              {/* Smart Dual-Currency Cash Calculator */}
-              {(paymentMethod === 'cash_usd' || paymentMethod === 'cash_khr' || paymentMethod === 'cash_mixed') && (
-                <div className="cash-calculator-box">
-                  {/* Mode Selector Tabs */}
-                  <div className="cash-calc-header">
-                    <div className="cash-calc-title">
-                      <span>💵 គណនាប្រាក់ទទួល & ប្រាក់អាប់</span>
-                    </div>
-
-                    <div className="cash-type-tabs">
-                      <button
-                        type="button"
-                        className={`cash-type-tab ${cashInputMode === 'usd' ? 'active' : ''}`}
-                        onClick={() => {
-                          setCashInputMode('usd');
-                          setPaymentMethod('cash_usd');
-                        }}
-                      >
-                        💵 ដុល្លារ ($)
-                      </button>
-                      <button
-                        type="button"
-                        className={`cash-type-tab ${cashInputMode === 'khr' ? 'active' : ''}`}
-                        onClick={() => {
-                          setCashInputMode('khr');
-                          setPaymentMethod('cash_khr');
-                        }}
-                      >
-                        🇰🇭 រៀល (៛)
-                      </button>
-                      <button
-                        type="button"
-                        className={`cash-type-tab ${cashInputMode === 'mixed' ? 'active' : ''}`}
-                        onClick={() => {
-                          setCashInputMode('mixed');
-                          setPaymentMethod('cash_mixed');
-                        }}
-                      >
-                        🔀 ចម្រុះ ($ + ៛)
-                      </button>
-                    </div>
+              {/* Consolidated Unified Payment & Smart Calculator */}
+              <div className="cash-calculator-box">
+                {/* Method / Mode Selector Tabs */}
+                <div className="cash-calc-header">
+                  <div className="cash-calc-title">
+                    <span>💳 វិធីសាស្ត្រទូទាត់ប្រាក់ & គណនាប្រាក់អាប់</span>
                   </div>
 
-                  {/* Body & Inputs */}
+                  <div className="cash-type-tabs unified-tabs">
+                    <button
+                      type="button"
+                      className={`cash-type-tab ${paymentMethod === 'cash_usd' ? 'active' : ''}`}
+                      onClick={() => {
+                        setCashInputMode('usd');
+                        setPaymentMethod('cash_usd');
+                      }}
+                    >
+                      💵 ដុល្លារ ($)
+                    </button>
+                    <button
+                      type="button"
+                      className={`cash-type-tab ${paymentMethod === 'cash_khr' ? 'active' : ''}`}
+                      onClick={() => {
+                        setCashInputMode('khr');
+                        setPaymentMethod('cash_khr');
+                      }}
+                    >
+                      🇰🇭 រៀល (៛)
+                    </button>
+                    <button
+                      type="button"
+                      className={`cash-type-tab ${paymentMethod === 'cash_mixed' ? 'active' : ''}`}
+                      onClick={() => {
+                        setCashInputMode('mixed');
+                        setPaymentMethod('cash_mixed');
+                      }}
+                    >
+                      🔀 ចម្រុះ ($ + ៛)
+                    </button>
+                    <button
+                      type="button"
+                      className={`cash-type-tab ${paymentMethod === 'aba_khqr' ? 'active' : ''}`}
+                      onClick={() => setPaymentMethod('aba_khqr')}
+                    >
+                      📱 ស្កេន (KHQR)
+                    </button>
+                    <button
+                      type="button"
+                      className={`cash-type-tab ${paymentMethod === 'card' ? 'active' : ''}`}
+                      onClick={() => setPaymentMethod('card')}
+                    >
+                      💳 កាតធនាគារ
+                    </button>
+                  </div>
+                </div>
+
+                {/* Body & Inputs for Cash ($ / ៛ / Mixed) */}
+                {(paymentMethod === 'cash_usd' || paymentMethod === 'cash_khr' || paymentMethod === 'cash_mixed') && (
                   <div className="cash-calc-body">
                     {/* Mode: USD Only */}
                     {cashInputMode === 'usd' && (
@@ -826,8 +789,36 @@ export default function Sell() {
                       </div>
                     )}
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Body for QR / KHQR Scan */}
+                {paymentMethod === 'aba_khqr' && (
+                  <div className="cash-calc-body digital-payment-body">
+                    <div className="digital-payment-card khqr-card">
+                      <div className="digital-card-icon">📱</div>
+                      <div className="digital-card-info">
+                        <strong>ទូទាត់តាមការស្កេន KHQR (Bakong / ABA)</strong>
+                        <p>អតិថិជនស្កេនទូទាត់គ្រប់ចំនួន <strong>{formatUSD(totalUSD)}</strong> ({formatKHR(totalUSD)})</p>
+                      </div>
+                      <span className="badge badge-khqr-ready">រួចរាល់គិតលុយ ✓</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Body for Card Payment */}
+                {paymentMethod === 'card' && (
+                  <div className="cash-calc-body digital-payment-body">
+                    <div className="digital-payment-card card-pay-card">
+                      <div className="digital-card-icon">💳</div>
+                      <div className="digital-card-info">
+                        <strong>ទូទាត់តាមកាតធនាគារ (Credit/Debit Card)</strong>
+                        <p>គិតប្រាក់តាមម៉ាស៊ីនឆូតកាត POS ចំនួន <strong>{formatUSD(totalUSD)}</strong> ({formatKHR(totalUSD)})</p>
+                      </div>
+                      <span className="badge badge-card-ready">រួចរាល់ឆូតកាត ✓</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Totals Summary */}
               <div className="cart-totals-box">
